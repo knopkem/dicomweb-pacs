@@ -1,0 +1,53 @@
+{
+  "name": "dicomweb-pacs",
+  "version": "0.1.0",
+  "description": "A self contained PACS with DICOMWEB and DIMSE services",
+  "main": "app.js",
+  "scripts": {
+    "start": "node src/app.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/knopkem/dicomweb-pacs.git"
+  },
+  "keywords": [
+    "DICOMWEB",
+    "PACS",
+    "DIMSE",
+    "DICOM"
+  ],
+  "author": "Michael Knopke",
+  "license": "MIT",
+  "bin": {
+    "dicomweb-pacs": "bin/dicomweb-pacs"
+  },
+  "bugs": {
+    "url": "https://github.com/knopkem/dicomweb-pacs/issues"
+  },
+  "homepage": "https://github.com/knopkem/dicomweb-pacs#readme",
+  "dependencies": {
+    "body-parser": "^1.19.0",
+    "config": "^3.3.2",
+    "dicom-data-dictionary": "^0.3.1",
+    "dicom-dimse-native": "1.1.1",
+    "express": "^4.17.1",
+    "express-session": "^1.17.0",
+    "keycloak-connect": "^9.0.2",
+    "node-persist": "^3.0.5",
+    "shelljs": "^0.8.3",
+    "uuid": "^7.0.3",
+    "winston": "^2.4.5",
+    "winston-daily-rotate-file": "^3.8.0"
+  },
+  "devDependencies": {
+    "eslint": "^6.8.0",
+    "eslint-config-airbnb": "^18.2.0",
+    "eslint-config-prettier": "^6.12.0",
+    "eslint-plugin-import": "^2.22.0",
+    "eslint-plugin-jsx-a11y": "^6.3.1",
+    "eslint-plugin-prettier": "^3.1.4",
+    "eslint-plugin-react": "^7.21.2",
+    "eslint-plugin-react-hooks": "^2.5.0",
+    "prettier": "^1.19.1"
+  }
+}

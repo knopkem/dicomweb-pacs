@@ -1,0 +1,20 @@
+#!/usr/bin/env node
+"use strict";
+
+var spawn = require('child_process').spawn;
+console.log('starting dicomweb-pacs...');
+
+process.chdir('./node_modules/dicomweb-pacs');
+const ls = spawn('node', ['app.js']);
+
+ls.stdout.on('data', (data) => {
+  console.log(`stdout: ${data}`);
+});
+
+ls.stderr.on('data', (data) => {
+  console.error(`stderr: ${data}`);
+});
+
+ls.on('close', (code) => {
+  console.log(`child process exited with code ${code}`);
+});
