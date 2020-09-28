@@ -3,6 +3,7 @@
 config/development.js
 config/production.js
 keycloak.json
+data
 
 # Logs
 logs

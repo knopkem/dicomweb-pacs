@@ -1,10 +1,11 @@
 {
   "name": "dicomweb-pacs",
-  "version": "0.1.0",
-  "description": "A self contained PACS with DICOMWEB and DIMSE services",
+  "version": "1.0.0",
+  "description": "A self contained easy to use PACS with DICOMWEB and DIMSE service support",
   "main": "app.js",
   "scripts": {
-    "start": "node src/app.js"
+    "start": "node src/app.js",
+    "import": "node src/storescu.js"
   },
   "repository": {
     "type": "git",
@@ -13,8 +14,22 @@
   "keywords": [
     "DICOMWEB",
     "PACS",
+    "ARCHIVE",
     "DIMSE",
-    "DICOM"
+    "DICOM",
+    "STORE",
+    "MOVE",
+    "GET",
+    "FIND",
+    "SCP",
+    "SCU",
+    "OHIF",
+    "VIEWER",
+    "ORTHANC",
+    "DCMTK",
+    "DCM4CHEE",
+    "PACSONE",
+    "CONQUEST"
   ],
   "author": "Michael Knopke",
   "license": "MIT",
@@ -26,28 +41,23 @@
   },
   "homepage": "https://github.com/knopkem/dicomweb-pacs#readme",
   "dependencies": {
-    "body-parser": "^1.19.0",
     "config": "^3.3.2",
     "dicom-data-dictionary": "^0.3.1",
-    "dicom-dimse-native": "1.1.1",
-    "express": "^4.17.1",
-    "express-session": "^1.17.0",
-    "keycloak-connect": "^9.0.2",
-    "node-persist": "^3.0.5",
-    "shelljs": "^0.8.3",
-    "uuid": "^7.0.3",
-    "winston": "^2.4.5",
-    "winston-daily-rotate-file": "^3.8.0"
+    "dicom-dimse-native": "^1.2.1",
+    "dicom-parser": "^1.8.7",
+    "fastify": "^3.4.1",
+    "fastify-cors": "^4.1.0",
+    "fastify-static": "^3.2.0",
+    "shelljs": "^0.8.4",
+    "simple-node-logger": "^18.12.24"
   },
   "devDependencies": {
-    "eslint": "^6.8.0",
-    "eslint-config-airbnb": "^18.2.0",
-    "eslint-config-prettier": "^6.12.0",
-    "eslint-plugin-import": "^2.22.0",
-    "eslint-plugin-jsx-a11y": "^6.3.1",
-    "eslint-plugin-prettier": "^3.1.4",
-    "eslint-plugin-react": "^7.21.2",
-    "eslint-plugin-react-hooks": "^2.5.0",
+    "eslint": "^7.10.0",
+    "eslint-config-airbnb": "^18.1.0",
+    "eslint-config-prettier": "^6.10.1",
+    "eslint-plugin-import": "^2.20.1",
+    "eslint-plugin-jsx-a11y": "^6.2.3",
+    "eslint-plugin-prettier": "^3.1.2",
     "prettier": "^1.19.1"
   }
 }

@@ -3,7 +3,9 @@
 An easy to use PACS with DICOMWEB and DIMSE service support
 
 ## Description
-* A nodejs tool to easily spawn a PACS server including DICOM viewer connected via DICOMWEB. Comes with preinstalled OHIF DICOM Web Viewer.
+* A nodejs tool to easily spawn a PACS server including DICOM viewer connected via DICOMWEB (QIDO-RS and WADO-RS).
+* Comes with preinstalled OHIF DICOM Web Viewer (version 4.5.12).
+* Supports OHIF MPR (vtk.js) feature for viewing volumetric datasets
 
 ## Prerequisite
 
@@ -31,7 +33,17 @@ An easy to use PACS with DICOMWEB and DIMSE service support
 * run:
 ```npm start```
 
+* import DICOM images: use any c-store-scu to push to internal store-scp 
+```(AET: DICOMWEB_PACS   port: 8888)```
+
+* (or use internal store-scu): put DICOM into import directory and run
+```npm run import```
+
+* open webbrowser and start viewing
+```http://localhost:5000```
+
 ## What to modify
+
 * (optional) change source port or AET 
 
 ```
@@ -55,9 +67,6 @@ config.peers = [
 
 * update port
 ```config.webserverPort = 5000;```
-
-* open webbrowser and start viewing
-e.g. ```http://localhost:5000```
 
 ## License
 MIT

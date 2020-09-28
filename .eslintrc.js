@@ -6,9 +6,8 @@ module.exports = {
     ]
     ,
      "parserOptions": {
-        "ecmaVersion": 2017
+        "ecmaVersion": 11
     },
-
     "env": {
         "es6": true
     }
