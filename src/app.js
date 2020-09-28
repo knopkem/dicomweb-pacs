@@ -6,6 +6,11 @@ const dicomParser = require("dicom-parser");
 const crypto = require("crypto");
 const fastify = require("fastify")({ logger: false });
 const { Readable } = require("stream");
+
+// make sure default directories exist
+shell.mkdir("-p", config.get("logDir"));
+shell.mkdir("-p", "./data");
+
 const utils = require("./utils.js");
 
 fastify.register(require("fastify-static"), {
@@ -17,9 +22,6 @@ fastify.register(require("fastify-cors"), {
 
 const logger = utils.getLogger();
 
-// make sure default directories exist
-shell.mkdir("-p", config.get("logDir"));
-shell.mkdir("-p", "./data");
 
 // log exceptions
 process.on("uncaughtException", (err) => {

@@ -5,7 +5,7 @@ var spawn = require('child_process').spawn;
 console.log('starting dicomweb-pacs...');
 
 process.chdir('./node_modules/dicomweb-pacs');
-const ls = spawn('node', ['app.js']);
+const ls = spawn('node', ['src/app.js']);
 
 ls.stdout.on('data', (data) => {
   console.log(`stdout: ${data}`);
