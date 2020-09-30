@@ -13,60 +13,61 @@ An easy to use PACS with DICOMWEB and DIMSE service support
 
 ## Setup Instructions - npm
 
-* install in empty directory
-```npm install dicomweb-pacs```
+* install in empty directory:  
+  ```npm init -y```  
+  ```npm install dicomweb-pacs```
 
-* update config file located in:
-```./node_modules/dicomweb-pacs/config```
+* update config file located in:  
+  ```./node_modules/dicomweb-pacs/config```
 
-* run:
-```npx dicomweb-pacs```
+* start pacs:  
+  ```npx dicomweb-pacs```
 
 ## Setup Instructions - source
 
-* clone repository and install dependencies 
-```npm install```
+* clone repository and install dependencies  
+  ```npm install```
 
-* update config file located in:
-```./config```
+* update config file located in:  
+  ```./config```
 
-* run:
-```npm start```
+* run:  
+  ```npm start```
 
-* import DICOM images: use any c-store-scu to push to internal store-scp 
-```(AET: DICOMWEB_PACS   port: 8888)```
+* import DICOM images: use any c-store-scu to push to internal store-scp  
+  ```(AET: DICOMWEB_PACS   port: 8888)```
 
-* (or use internal store-scu): put DICOM into import directory and run
-```npm run import```
+* (or use internal store-scu): put DICOM into import directory and run  
+  ```npm run import``` (server needs to be running)
 
-* open webbrowser and start viewing
-```http://localhost:5000```
+* open webbrowser and start viewing  
+  ```http://localhost:5000```
 
 ## What to modify
 
-* (optional) change source port or AET 
+* (optional) change our port or AET 
 
-```
-config.source = {
-  aet: "OUR_AET",
-  ip: "OUR_IP",
-  port: "OUR_PORT"
-};
-```
+  ```
+    config.source = {
+      aet: "OUR_AET",
+      ip: "OUR_IP",
+      port: "OUR_PORT"
+    };
+    ```
 
 * add peers to your PACS
 
-```
-config.peers = [
-{
-  aet: "PEER_AET",
-  ip: "PEER_IP",
-  port: "PEER_PORT"
-}];
-```
+  ```
+    config.peers = [
+    {
+      aet: "PEER_AET",
+      ip: "PEER_IP",
+      port: "PEER_PORT"
+    }];
+    ```
 
-* update port
-```config.webserverPort = 5000;```
+* update webserver port:  
+  ```config.webserverPort = 5000;```
 
 ## License
 MIT
