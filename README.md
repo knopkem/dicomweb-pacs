@@ -6,6 +6,8 @@ An easy to use PACS with DICOMWEB and DIMSE service support
 * A nodejs tool to easily spawn a PACS server including DICOM viewer connected via DICOMWEB (QIDO-RS and WADO-RS).
 * Comes with preinstalled OHIF DICOM Web Viewer (version 4.5.12).
 * Supports OHIF MPR (vtk.js) feature for viewing volumetric datasets
+* multithreaded
+* sqlite backend
 
 ## Prerequisite
 
