@@ -1,14 +1,14 @@
-const config = require("config");
-const dict = require("dicom-data-dictionary");
-const dimse = require("dicom-dimse-native");
-const fs = require("fs");
+const config = require('config');
+const dict = require('dicom-data-dictionary');
+const dimse = require('dicom-dimse-native');
+const fs = require('fs');
 
 // create a rolling file logger based on date/time that fires process events
 const opts = {
-  errorEventName: "error",
-  logDirectory: "./logs", // NOTE: folder must exist and be writable...
-  fileNamePattern: "roll-<DATE>.log",
-  dateFormat: "YYYY.MM.DD",
+  errorEventName: 'error',
+  logDirectory: './logs', // NOTE: folder must exist and be writable...
+  fileNamePattern: 'roll-<DATE>.log',
+  dateFormat: 'YYYY.MM.DD',
 };
 const manager = require('simple-node-logger').createLogManager();
 // manager.createConsoleAppender();
@@ -35,8 +35,8 @@ const utils = {
     return logger;
   },
   startScp: () => {
-    const source = config.get("source");
-    const ar = config.get("peers");
+    const source = config.get('source');
+    const ar = config.get('peers');
     let peers = [];
     ar.forEach(aet => {
         peers.push(aet);
@@ -47,8 +47,8 @@ const utils = {
     j.target = j.source;
     j.peers = peers;
     j.peers.push(j.source);
-    j.storagePath = config.get("storagePath");
-    j.verbose = config.get("verboseLogging");
+    j.storagePath = config.get('storagePath');
+    j.verbose = config.get('verboseLogging');
 
     logger.info(`pacs-server listening on port: ${j.source.port}`);
  
@@ -59,9 +59,9 @@ const utils = {
   },
   sendEcho: () => {
     const j = {};
-    j.source = config.get("source");
+    j.source = config.get('source');
     j.target = j.source;
-    j.verbose = config.get("verboseLogging");
+    j.verbose = config.get('verboseLogging');
 
     logger.info(`sending C-ECHO to target: ${j.target.aet}`);
 
@@ -96,30 +96,30 @@ const utils = {
     const j = {
       tags: [
         {
-          key: "00080052",
+          key: '00080052',
           value: queryLevel,
         },
       ],
     };
 
     // set source and target from config
-    j.source = config.get("source");
+    j.source = config.get('source');
     j.target = j.source;
-    j.verbose = config.get("verboseLogging");
+    j.verbose = config.get('verboseLogging');
 
     // parse all include fields
     const includes = query.includefield;
 
     let tags = [];
     if (includes) {
-      tags = includes.split(",");
+      tags = includes.split(',');
     }
     tags.push(...defaults);
 
     // add parsed tags
     tags.forEach((element) => {
       const tagName = findDicomName(element) || element;
-      j.tags.push({ key: tagName, value: "" });
+      j.tags.push({ key: tagName, value: '' });
     });
 
     // add search param
@@ -129,14 +129,14 @@ const utils = {
       if (tag) {
         let v = query[propName];
         // patient name check
-        if (tag === "00100010") {
+        if (tag === '00100010') {
           // check if minimum number of chars for patient name are given
-          if (config.get("qidoMinChars") > v.length) {
+          if (config.get('qidoMinChars') > v.length) {
             isValidInput = true;
           }
           // auto append wildcard
-          if (config.get("qidoAppendWildcard")) {
-            v += "*";
+          if (config.get('qidoAppendWildcard')) {
+            v += '*';
           }
         }
         j.tags.push({ key: tag, value: v });
@@ -163,7 +163,7 @@ const utils = {
                 resolve([]);
               }
             } else if (json.code === 1) {
-              logger.info("query is pending...");
+              logger.info('query is pending...');
             } else {
               logger.error(`c-find failure: ${json.message}`);
               resolve([]);
@@ -174,7 +174,7 @@ const utils = {
             resolve([]);
           }
         } else {
-          logger.error("invalid result received");
+          logger.error('invalid result received');
           resolve([]);
         }
       });

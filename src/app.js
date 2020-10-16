@@ -1,85 +1,85 @@
-const config = require("config");
-const shell = require("shelljs");
-const fs = require("fs");
-const path = require("path");
-const dicomParser = require("dicom-parser");
-const crypto = require("crypto");
-const fastify = require("fastify")({ logger: false });
-const { Readable } = require("stream");
+const config = require('config');
+const shell = require('shelljs');
+const fs = require('fs');
+const path = require('path');
+const dicomParser = require('dicom-parser');
+const crypto = require('crypto');
+const fastify = require('fastify')({ logger: false });
+const { Readable } = require('stream');
 
 // make sure default directories exist
-shell.mkdir("-p", config.get("logDir"));
-shell.mkdir("-p", "./data");
+shell.mkdir('-p', config.get('logDir'));
+shell.mkdir('-p', './data');
 
-const utils = require("./utils.js");
+const utils = require('./utils.js');
 
-fastify.register(require("fastify-static"), {
-  root: path.join(__dirname, "../public")
+fastify.register(require('fastify-static'), {
+  root: path.join(__dirname, '../public')
 });
 
-fastify.register(require("fastify-cors"), { 
+fastify.register(require('fastify-cors'), { 
 });
 
 const logger = utils.getLogger();
 
 
 // log exceptions
-process.on("uncaughtException", (err) => {
-  logger.error("uncaught exception received:");
+process.on('uncaughtException', (err) => {
+  logger.error('uncaught exception received:');
   logger.error(err.stack);
   process.exit(1);
 });
 
 //------------------------------------------------------------------
 
-fastify.get("/rs/studies", async (req, reply) => {
+fastify.get('/rs/studies', async (req, reply) => {
   // fix for OHIF viewer assuming a lot of tags
   const tags = [
-    "00080005",
-    "00080020",
-    "00080030",
-    "00080050",
-    "00080054",
-    "00080056",
-    "00080061",
-    "00080090",
-    "00081190",
-    "00100010",
-    "00100020",
-    "00100030",
-    "00100040",
-    "0020000D",
-    "00200010",
-    "00201206",
-    "00201208",
+    '00080005',
+    '00080020',
+    '00080030',
+    '00080050',
+    '00080054',
+    '00080056',
+    '00080061',
+    '00080090',
+    '00081190',
+    '00100010',
+    '00100020',
+    '00100030',
+    '00100040',
+    '0020000D',
+    '00200010',
+    '00201206',
+    '00201208',
   ];
 
-  const json = await utils.doFind("STUDY", req.query, tags);
+  const json = await utils.doFind('STUDY', req.query, tags);
   reply.send(json);
 });
 
 //------------------------------------------------------------------
 
 fastify.get(
-  "/viewer/rs/studies/:studyInstanceUid/metadata",
+  '/viewer/rs/studies/:studyInstanceUid/metadata',
   async (req, reply) => {
     // fix for OHIF viewer assuming a lot of tags
     const tags = [
-      "00080005",
-      "00080054",
-      "00080056",
-      "00080060",
-      "0008103E",
-      "00081190",
-      "0020000E",
-      "00200011",
-      "00201209",
+      '00080005',
+      '00080054',
+      '00080056',
+      '00080060',
+      '0008103E',
+      '00081190',
+      '0020000E',
+      '00200011',
+      '00201209',
     ];
 
     const { query } = req;
     query.StudyInstanceUID = req.params.studyInstanceUid;
 
-    const json = await utils.doFind("SERIES", query, tags);
+    const json = await utils.doFind('SERIES', query, tags);
     reply.send(json);
   }
 );
@@ -87,25 +87,25 @@ fastify.get(
 //------------------------------------------------------------------
 
 fastify.get(
-  "/viewer/rs/studies/:studyInstanceUid/series",
+  '/viewer/rs/studies/:studyInstanceUid/series',
   async (req, reply) => {
     // fix for OHIF viewer assuming a lot of tags
     const tags = [
-      "00080005",
-      "00080054",
-      "00080056",
-      "00080060",
-      "0008103E",
-      "00081190",
-      "0020000E",
-      "00200011",
-      "00201209",
+      '00080005',
+      '00080054',
+      '00080056',
+      '00080060',
+      '0008103E',
+      '00081190',
+      '0020000E',
+      '00200011',
+      '00201209',
     ];
 
     const { query } = req;
     query.StudyInstanceUID = req.params.studyInstanceUid;
 
-    const json = await utils.doFind("SERIES", query, tags);
+    const json = await utils.doFind('SERIES', query, tags);
     reply.send(json);
   }
 );
@@ -113,19 +113,19 @@ fastify.get(
 //------------------------------------------------------------------
 
 fastify.get(
-  "/viewer/rs/studies/:studyInstanceUid/series/:seriesInstanceUid/instances",
+  '/viewer/rs/studies/:studyInstanceUid/series/:seriesInstanceUid/instances',
   async (req, reply) => {
     // fix for OHIF viewer assuming a lot of tags
     const tags = [
-        "00080016", 
-        "00080018"
+        '00080016', 
+        '00080018'
     ];
 
     const { query } = req;
     query.StudyInstanceUID = req.params.studyInstanceUid;
     query.SeriesInstanceUID = req.params.seriesInstanceUid;
 
-    const json = await utils.doFind("IMAGE", query, tags);
+    const json = await utils.doFind('IMAGE', query, tags);
     reply.send(json);
   }
 );
@@ -133,34 +133,34 @@ fastify.get(
 //------------------------------------------------------------------
 
 fastify.get(
-  "/viewer/rs/studies/:studyInstanceUid/series/:seriesInstanceUid/metadata",
+  '/viewer/rs/studies/:studyInstanceUid/series/:seriesInstanceUid/metadata',
   async (req, reply) => {
     // fix for OHIF viewer assuming a lot of tags
     const tags = [
-      "00080016",
-      "00080018",
-      "00080060",
-      "00280002",
-      "00280004",
-      "00280010",
-      "00280011",
-      "00280030",
-      "00280100",
-      "00280101",
-      "00280102",
-      "00280103",
-      "00281050",
-      "00281051",
-      "00281052",
-      "00281053",
-      "00200032",
-      "00200037",
+      '00080016',
+      '00080018',
+      '00080060',
+      '00280002',
+      '00280004',
+      '00280010',
+      '00280011',
+      '00280030',
+      '00280100',
+      '00280101',
+      '00280102',
+      '00280103',
+      '00281050',
+      '00281051',
+      '00281052',
+      '00281053',
+      '00200032',
+      '00200037',
     ];
     const { query } = req;
     query.StudyInstanceUID = req.params.studyInstanceUid;
     query.SeriesInstanceUID = req.params.seriesInstanceUid;
 
-    const json = await utils.doFind("IMAGE", query, tags);
+    const json = await utils.doFind('IMAGE', query, tags);
     reply.send(json);
   }
 );
@@ -168,7 +168,7 @@ fastify.get(
 //------------------------------------------------------------------
 
 fastify.get(
-  "/viewer/rs/studies/:studyInstanceUid/series/:seriesInstanceUid/instances/:sopInstanceUid/frames/:frame",
+  '/viewer/rs/studies/:studyInstanceUid/series/:seriesInstanceUid/instances/:sopInstanceUid/frames/:frame',
   async (req, reply) => {
     const {
       studyInstanceUid,
@@ -177,7 +177,7 @@ fastify.get(
       frame,
     } = req.params;
 
-    const storagePath = config.get("storagePath");
+    const storagePath = config.get('storagePath');
     const pathname = path.join(storagePath, studyInstanceUid, sopInstanceUid);
 
     try {
@@ -201,14 +201,14 @@ fastify.get(
         pixelDataElement.length
       );
 
-      const term = "\r\n";
-      const boundary = crypto.randomBytes(16).toString("hex");
-      const contentId = crypto.randomBytes(16).toString("hex");
+      const term = '\r\n';
+      const boundary = crypto.randomBytes(16).toString('hex');
+      const contentId = crypto.randomBytes(16).toString('hex');
       const endline = `${term}--${boundary}--${term}`;
 
       reply.header(
-        "Content-Type",
-        `multipart/related;start=${contentId};type="application/octed-stream";boundary="${boundary}"`
+        'Content-Type',
+        `multipart/related;start=${contentId};type='application/octed-stream';boundary='${boundary}'`
       );
 
       const readStream = new Readable({
@@ -235,7 +235,42 @@ fastify.get(
 
 //------------------------------------------------------------------
 
-const port= config.get("webserverPort");
+fastify.get('/viewer/wadouri/', async (req, reply) => {
+  const studyUid = req.query.studyUID;
+  const seriesUid = req.query.seriesUID;
+  const imageUid = req.query.objectUID;
+  if (!studyUid || !seriesUid || !imageUid) {
+    const msg = `Error missing parameters.`;
+    logger.error(msg);
+    reply.code = 500;
+    reply.send(msg);
+    return;
+  }
+  const storagePath = config.get('storagePath');
+  const pathname = path.join(storagePath, studyUid, imageUid);
+
+  // if the file is found, set Content-type and send data
+  reply.header(
+    'Content-Type',
+    'application/dicom'
+  );
+
+
+  // read file from file system
+  fs.readFile(pathname, (err, data) => {
+    if (err) {
+      const msg = `Error getting the file: ${err}.`;
+      logger.error(msg);
+      reply.code = 500;
+      reply.send(msg);
+    }
+    reply.send(data);
+  });
+});
+
+//------------------------------------------------------------------
+
+const port= config.get('webserverPort');
 logger.info('starting...');
 fastify.listen(port, (err, address) => {
   if (err) {

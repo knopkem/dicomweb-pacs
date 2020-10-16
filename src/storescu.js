@@ -1,11 +1,11 @@
-const dimse = require("dicom-dimse-native");
-const config = require("config");
-const path = require("path");
+const dimse = require('dicom-dimse-native');
+const config = require('config');
+const path = require('path');
 
 let j = {};
-j.source = config.get("source");
+j.source = config.get('source');
 j.target = j.source;
-j.sourcePath = path.join(__dirname, "../import");
+j.sourcePath = path.join(__dirname, '../import');
 j.verbose = true;
 dimse.storeScu(
   JSON.stringify(j),
