@@ -235,7 +235,7 @@ fastify.get(
 
 //------------------------------------------------------------------
 
-fastify.get('/wadouri/', async (req, reply) => {
+fastify.get('/wadouri', async (req, reply) => {
   const studyUid = req.query.studyUID;
   const seriesUid = req.query.seriesUID;
   const imageUid = req.query.objectUID;
