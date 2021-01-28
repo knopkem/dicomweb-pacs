@@ -61,7 +61,7 @@ fastify.get('/rs/studies', async (req, reply) => {
 //------------------------------------------------------------------
 
 fastify.get(
-  '/viewer/rs/studies/:studyInstanceUid/metadata',
+  '/rs/studies/:studyInstanceUid/metadata',
   async (req, reply) => {
     // fix for OHIF viewer assuming a lot of tags
     const tags = [
@@ -87,7 +87,7 @@ fastify.get(
 //------------------------------------------------------------------
 
 fastify.get(
-  '/viewer/rs/studies/:studyInstanceUid/series',
+  '/rs/studies/:studyInstanceUid/series',
   async (req, reply) => {
     // fix for OHIF viewer assuming a lot of tags
     const tags = [
@@ -113,7 +113,7 @@ fastify.get(
 //------------------------------------------------------------------
 
 fastify.get(
-  '/viewer/rs/studies/:studyInstanceUid/series/:seriesInstanceUid/instances',
+  '/rs/studies/:studyInstanceUid/series/:seriesInstanceUid/instances',
   async (req, reply) => {
     // fix for OHIF viewer assuming a lot of tags
     const tags = [
@@ -133,7 +133,7 @@ fastify.get(
 //------------------------------------------------------------------
 
 fastify.get(
-  '/viewer/rs/studies/:studyInstanceUid/series/:seriesInstanceUid/metadata',
+  '/rs/studies/:studyInstanceUid/series/:seriesInstanceUid/metadata',
   async (req, reply) => {
     // fix for OHIF viewer assuming a lot of tags
     const tags = [
@@ -168,7 +168,7 @@ fastify.get(
 //------------------------------------------------------------------
 
 fastify.get(
-  '/viewer/rs/studies/:studyInstanceUid/series/:seriesInstanceUid/instances/:sopInstanceUid/frames/:frame',
+  '/rs/studies/:studyInstanceUid/series/:seriesInstanceUid/instances/:sopInstanceUid/frames/:frame',
   async (req, reply) => {
     const {
       studyInstanceUid,
@@ -235,7 +235,7 @@ fastify.get(
 
 //------------------------------------------------------------------
 
-fastify.get('/viewer/wadouri/', async (req, reply) => {
+fastify.get('/wadouri/', async (req, reply) => {
   const studyUid = req.query.studyUID;
   const seriesUid = req.query.seriesUID;
   const imageUid = req.query.objectUID;
