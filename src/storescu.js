@@ -2,7 +2,7 @@ const dimse = require('dicom-dimse-native');
 const config = require('config');
 const path = require('path');
 
-let j = {};
+const j = {};
 j.source = config.get('source');
 j.target = j.source;
 j.sourcePath = path.join(__dirname, '../import');

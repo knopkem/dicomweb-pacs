@@ -37,7 +37,7 @@ const utils = {
   startScp: () => {
     const source = config.get('source');
     const ar = config.get('peers');
-    let peers = [];
+    const peers = [];
     ar.forEach(aet => {
         peers.push(aet);
     });

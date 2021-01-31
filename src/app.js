@@ -172,9 +172,7 @@ fastify.get(
   async (req, reply) => {
     const {
       studyInstanceUid,
-      seriesInstanceUid,
       sopInstanceUid,
-      frame,
     } = req.params;
 
     const storagePath = config.get('storagePath');
@@ -242,7 +240,7 @@ fastify.get('/viewer/wadouri/', async (req, reply) => {
   if (!studyUid || !seriesUid || !imageUid) {
     const msg = `Error missing parameters.`;
     logger.error(msg);
-    reply.code = 500;
+    reply.setCode(500);
     reply.send(msg);
     return;
   }
@@ -274,7 +272,7 @@ const port= config.get('webserverPort');
 logger.info('starting...');
 fastify.listen(port, (err, address) => {
   if (err) {
-    logger.error(err);
+    logger.error(err, address);
     process.exit(1);
   }
   logger.info(`web-server listening on port: ${port}`);
