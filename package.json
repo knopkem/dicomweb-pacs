@@ -41,7 +41,7 @@
   },
   "homepage": "https://github.com/knopkem/dicomweb-pacs#readme",
   "dependencies": {
-    "config": "^3.3.3",
+    "config": "^3.3.4",
     "dicom-data-dictionary": "^0.3.1",
     "dicom-dimse-native": "1.2.5",
     "dicom-parser": "^1.8.7",
