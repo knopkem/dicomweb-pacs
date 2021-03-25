@@ -170,7 +170,7 @@ fastify.get('/viewer/wadouri/', async (req, reply) => {
   if (!studyUid || !seriesUid || !imageUid) {
     const msg = `Error missing parameters.`;
     logger.error(msg);
-    reply.setCode(500);
+    reply.code(500);
     reply.send(msg);
     return;
   }
