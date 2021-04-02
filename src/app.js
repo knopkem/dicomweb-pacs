@@ -33,27 +33,7 @@ process.on('uncaughtException', (err) => {
 //------------------------------------------------------------------
 
 fastify.get('/rs/studies', async (req, reply) => {
-  // fix for OHIF viewer assuming a lot of tags
-  const tags = [
-    '00080005',
-    '00080020',
-    '00080030',
-    '00080050',
-    '00080054',
-    '00080056',
-    '00080061',
-    '00080090',
-    '00081190',
-    '00100010',
-    '00100020',
-    '00100030',
-    '00100040',
-    '0020000D',
-    '00200010',
-    '00201206',
-    '00201208',
-  ];
-
+  const tags = utils.studyLevelTags();
   const json = await utils.doFind('STUDY', req.query, tags);
   reply.send(json);
 });
@@ -63,22 +43,9 @@ fastify.get('/rs/studies', async (req, reply) => {
 fastify.get(
   '/viewer/rs/studies/:studyInstanceUid/metadata',
   async (req, reply) => {
-    // fix for OHIF viewer assuming a lot of tags
-    const tags = [
-      '00080005',
-      '00080054',
-      '00080056',
-      '00080060',
-      '0008103E',
-      '00081190',
-      '0020000E',
-      '00200011',
-      '00201209',
-    ];
-
     const { query } = req;
     query.StudyInstanceUID = req.params.studyInstanceUid;
-
+    const tags = utils.seriesLevelTags();
     const json = await utils.doFind('SERIES', query, tags);
     reply.send(json);
   }
@@ -89,19 +56,7 @@ fastify.get(
 fastify.get(
   '/viewer/rs/studies/:studyInstanceUid/series',
   async (req, reply) => {
-    // fix for OHIF viewer assuming a lot of tags
-    const tags = [
-      '00080005',
-      '00080054',
-      '00080056',
-      '00080060',
-      '0008103E',
-      '00081190',
-      '0020000E',
-      '00200011',
-      '00201209',
-    ];
-
+    const tags = utils.seriesLevelTags();
     const { query } = req;
     query.StudyInstanceUID = req.params.studyInstanceUid;
 
@@ -115,12 +70,7 @@ fastify.get(
 fastify.get(
   '/viewer/rs/studies/:studyInstanceUid/series/:seriesInstanceUid/instances',
   async (req, reply) => {
-    // fix for OHIF viewer assuming a lot of tags
-    const tags = [
-        '00080016', 
-        '00080018'
-    ];
-
+    const tags = utils.imageLevelTags();
     const { query } = req;
     query.StudyInstanceUID = req.params.studyInstanceUid;
     query.SeriesInstanceUID = req.params.seriesInstanceUid;
@@ -135,27 +85,7 @@ fastify.get(
 fastify.get(
   '/viewer/rs/studies/:studyInstanceUid/series/:seriesInstanceUid/metadata',
   async (req, reply) => {
-    // fix for OHIF viewer assuming a lot of tags
-    const tags = [
-      '00080016',
-      '00080018',
-      '00080060',
-      '00280002',
-      '00280004',
-      '00280010',
-      '00280011',
-      '00280030',
-      '00280100',
-      '00280101',
-      '00280102',
-      '00280103',
-      '00281050',
-      '00281051',
-      '00281052',
-      '00281053',
-      '00200032',
-      '00200037',
-    ];
+    const tags = utils.imageMetadataTags();
     const { query } = req;
     query.StudyInstanceUID = req.params.studyInstanceUid;
     query.SeriesInstanceUID = req.params.seriesInstanceUid;
@@ -240,7 +170,7 @@ fastify.get('/viewer/wadouri/', async (req, reply) => {
   if (!studyUid || !seriesUid || !imageUid) {
     const msg = `Error missing parameters.`;
     logger.error(msg);
-    reply.setCode(500);
+    reply.code(500);
     reply.send(msg);
     return;
   }
@@ -259,7 +189,7 @@ fastify.get('/viewer/wadouri/', async (req, reply) => {
     if (err) {
       const msg = `Error getting the file: ${err}.`;
       logger.error(msg);
-      reply.code = 500;
+      reply.setCode(500);
       reply.send(msg);
     }
     reply.send(data);
