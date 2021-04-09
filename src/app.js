@@ -40,6 +40,14 @@ fastify.get('/rs/studies', async (req, reply) => {
 
 //------------------------------------------------------------------
 
+fastify.get('/viewer/rs/studies', async (req, reply) => {
+  const tags = utils.studyLevelTags();
+  const json = await utils.doFind('STUDY', req.query, tags);
+  reply.send(json);
+});
+
+//------------------------------------------------------------------
+
 fastify.get(
   '/viewer/rs/studies/:studyInstanceUid/metadata',
   async (req, reply) => {
