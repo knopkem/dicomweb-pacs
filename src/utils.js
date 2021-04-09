@@ -42,6 +42,7 @@ const utils = {
         peers.push(aet);
     });
 
+    const ts = config.get('transferSyntax');
     const j = {};
     j.source = source;
     j.target = j.source;
@@ -49,6 +50,9 @@ const utils = {
     j.peers.push(j.source);
     j.storagePath = config.get('storagePath');
     j.verbose = config.get('verboseLogging');
+    j.netTransferPrefer = ts;
+    j.netTransferPropose = ts;
+    j.writeTransfer = ts; 
 
     logger.info(`pacs-server listening on port: ${j.source.port}`);
  
@@ -152,6 +156,38 @@ const utils = {
       '00200032',
       '00200037',
     ];
+  },
+  compressFile: (inputFile, outputDirectory) => {
+    const j = {
+      sourcePath: inputFile,
+      storagePath: outputDirectory,
+      writeTransfer: config.get('transferSyntax'),
+      verbose: config.get('verboseLogging'),
+    };
+
+    // run find scu and return json response
+    return new Promise((resolve, reject) => {
+      dimse.recompress(JSON.stringify(j), (result) => {
+        if (result && result.length > 0) {
+          try {
+            const json = JSON.parse(result);
+            if (json.code === 0) {
+              resolve();
+            } else {
+              logger.error(`recompression failure (${inputFile}): ${json.message}`);
+              reject();
+            }
+          } catch (error) {
+            logger.error(error);
+            logger.error(result);
+            reject();
+          }
+        } else {
+          logger.error("invalid result received");
+          reject();
+        }
+      });
+    });
   },
   doFind: (queryLevel, query, defaults) => {
     // add query retrieve level

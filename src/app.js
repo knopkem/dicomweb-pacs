@@ -106,8 +106,9 @@ fastify.get(
     } = req.params;
 
     const storagePath = config.get('storagePath');
-    const pathname = path.join(storagePath, studyInstanceUid, sopInstanceUid);
-
+    const studyPath = path.join(storagePath, studyInstanceUid)
+    const pathname = path.join(studyPath, sopInstanceUid);
+  
     try {
       // logger.info(studyInstanceUid, seriesInstanceUid, sopInstanceUid, frame);
       await utils.fileExists(pathname);
@@ -117,6 +118,16 @@ fastify.get(
       reply.send(`File ${pathname} not found!`);
       return;
     }
+
+    try {
+      await utils.compressFile(pathname, studyPath);
+    } catch (error) {
+        logger.error(error);
+        const msg = `failed to compress ${pathname}`;
+        reply.code(500);
+        reply.send(msg);
+        return;
+    }  
 
     // read file from file system
     try {
@@ -175,14 +186,34 @@ fastify.get('/viewer/wadouri/', async (req, reply) => {
     return;
   }
   const storagePath = config.get('storagePath');
-  const pathname = path.join(storagePath, studyUid, imageUid);
+  const studyPath = path.join(storagePath, studyUid)
+  const pathname = path.join(studyPath, imageUid);
+
+  try {
+    await utils.fileExists(pathname);
+  } catch (error) {
+      logger.error(error);
+      const msg = `file not found ${pathname}`;
+      reply.code(500);
+      reply.send(msg);
+      return;
+  }
+
+  try {
+    await utils.compressFile(pathname, studyPath);
+  } catch (error) {
+      logger.error(error);
+      const msg = `failed to compress ${pathname}`;
+      reply.code(500);
+      reply.send(msg);
+      return;
+  }
 
   // if the file is found, set Content-type and send data
   reply.header(
     'Content-Type',
     'application/dicom'
   );
-
 
   // read file from file system
   fs.readFile(pathname, (err, data) => {
