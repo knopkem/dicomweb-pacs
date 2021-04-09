@@ -22,9 +22,7 @@ fastify.register(require('fastify-sensible'));
 
 fastify.register(require('fastify-helmet'), { contentSecurityPolicy: false });
 
-fastify.register(require('fastify-compress'), {
-  global: true,
-});
+fastify.register(require('fastify-compress'), { global: true });
 
 const logger = utils.getLogger();
 

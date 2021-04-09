@@ -1,6 +1,6 @@
 {
   "name": "dicomweb-pacs",
-  "version": "1.0.7",
+  "version": "1.1.0",
   "description": "A self contained easy to use PACS with DICOMWEB and DIMSE service support",
   "main": "app.js",
   "scripts": {
