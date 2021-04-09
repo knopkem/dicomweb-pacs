@@ -46,7 +46,10 @@
     "dicom-dimse-native": "^1.2.12",
     "dicom-parser": "^1.8.7",
     "fastify": "^3.13.0",
+    "fastify-compress": "^3.4.2",
     "fastify-cors": "^4.1.0",
+    "fastify-helmet": "^5.3.1",
+    "fastify-sensible": "^3.1.1",
     "fastify-static": "^3.4.0",
     "shelljs": "^0.8.4",
     "simple-node-logger": "^18.12.24"

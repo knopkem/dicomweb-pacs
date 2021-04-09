@@ -16,8 +16,15 @@ const utils = require('./utils.js');
 fastify.register(require('fastify-static'), {
   root: path.join(__dirname, '../public'),
 });
-
 fastify.register(require('fastify-cors'), {});
+
+fastify.register(require('fastify-sensible'));
+
+fastify.register(require('fastify-helmet'), { contentSecurityPolicy: false });
+
+fastify.register(require('fastify-compress'), {
+  global: true,
+});
 
 const logger = utils.getLogger();
 
@@ -33,6 +40,7 @@ process.on('uncaughtException', err => {
 fastify.get('/rs/studies', async (req, reply) => {
   const tags = utils.studyLevelTags();
   const json = await utils.doFind('STUDY', req.query, tags);
+  reply.header('Content-Type', 'application/dicom+json');
   reply.send(json);
 });
 
@@ -41,6 +49,7 @@ fastify.get('/rs/studies', async (req, reply) => {
 fastify.get('/viewer/rs/studies', async (req, reply) => {
   const tags = utils.studyLevelTags();
   const json = await utils.doFind('STUDY', req.query, tags);
+  reply.header('Content-Type', 'application/dicom+json');
   reply.send(json);
 });
 
@@ -51,6 +60,7 @@ fastify.get('/viewer/rs/studies/:studyInstanceUid/metadata', async (req, reply) 
   query.StudyInstanceUID = req.params.studyInstanceUid;
   const tags = utils.seriesLevelTags();
   const json = await utils.doFind('SERIES', query, tags);
+  reply.header('Content-Type', 'application/dicom+json');
   reply.send(json);
 });
 
@@ -62,6 +72,7 @@ fastify.get('/viewer/rs/studies/:studyInstanceUid/series', async (req, reply) =>
   query.StudyInstanceUID = req.params.studyInstanceUid;
 
   const json = await utils.doFind('SERIES', query, tags);
+  reply.header('Content-Type', 'application/dicom+json');
   reply.send(json);
 });
 
@@ -74,6 +85,7 @@ fastify.get('/viewer/rs/studies/:studyInstanceUid/series/:seriesInstanceUid/inst
   query.SeriesInstanceUID = req.params.seriesInstanceUid;
 
   const json = await utils.doFind('IMAGE', query, tags);
+  reply.header('Content-Type', 'application/dicom+json');
   reply.send(json);
 });
 
@@ -86,6 +98,7 @@ fastify.get('/viewer/rs/studies/:studyInstanceUid/series/:seriesInstanceUid/meta
   query.SeriesInstanceUID = req.params.seriesInstanceUid;
 
   const json = await utils.doFind('IMAGE', query, tags);
+  reply.header('Content-Type', 'application/dicom+json');
   reply.send(json);
 });
 
@@ -144,7 +157,6 @@ fastify.get('/viewer/rs/studies/:studyInstanceUid/series/:seriesInstanceUid/inst
         this.push(null);
       },
     });
-
     reply.send(readStream);
   } catch (error) {
     logger.error(error);
@@ -155,7 +167,7 @@ fastify.get('/viewer/rs/studies/:studyInstanceUid/series/:seriesInstanceUid/inst
 
 //------------------------------------------------------------------
 
-fastify.get('/viewer/wadouri/', async (req, reply) => {
+fastify.get('/viewer/wadouri', async (req, reply) => {
   const studyUid = req.query.studyUID;
   const seriesUid = req.query.seriesUID;
   const imageUid = req.query.objectUID;
@@ -191,7 +203,7 @@ fastify.get('/viewer/wadouri/', async (req, reply) => {
   }
 
   // if the file is found, set Content-type and send data
-  reply.header('Content-Type', 'application/dicom');
+  reply.header('Content-Type', 'application/dicom+json');
 
   // read file from file system
   fs.readFile(pathname, (err, data) => {
