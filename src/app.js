@@ -35,6 +35,19 @@ process.on('uncaughtException', err => {
 
 //------------------------------------------------------------------
 
+process.on('SIGINT', async () => {
+  await logger.info('shutting down web server...');
+  fastify.close().then(async () => {
+    await logger.info('webserver shutdown successfully');
+  }, (err) => {
+    logger.error('webserver shutdown failed', err);
+  })
+  await logger.info('shutting down DICOM SCP server...');
+  await utils.shutdown();
+});
+
+//------------------------------------------------------------------
+
 fastify.get('/rs/studies', async (req, reply) => {
   const tags = utils.studyLevelTags();
   const json = await utils.doFind('STUDY', req.query, tags);

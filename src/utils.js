@@ -61,6 +61,29 @@ const utils = {
       logger.info(JSON.parse(result));
     });
   },
+  shutdown: () => {
+    const j = {};
+    j.source = config.get('source');
+    j.target = config.get('source');
+    j.verbose = config.get('verboseLogging');
+
+    logger.info(`sending shutdown request to target: ${j.target.aet}`);
+
+    return new Promise((resolve, reject) => {
+      dimse.shutdownScu(JSON.stringify(j), (result) => {
+        if (result && result.length > 0) {
+          try {
+            logger.info(JSON.parse(result));
+            resolve();
+          } catch (error) {
+            logger.error(result);
+            reject();
+          }
+        }
+        reject();
+      });
+    });
+  },
   sendEcho: () => {
     const j = {};
     j.source = config.get("source");
