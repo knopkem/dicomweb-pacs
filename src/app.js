@@ -30,7 +30,6 @@ const logger = utils.getLogger();
 process.on('uncaughtException', err => {
   logger.error('uncaught exception received:');
   logger.error(err.stack);
-  process.exit(1);
 });
 
 //------------------------------------------------------------------
@@ -44,6 +43,7 @@ process.on('SIGINT', async () => {
   })
   await logger.info('shutting down DICOM SCP server...');
   await utils.shutdown();
+  process.exit(1);
 });
 
 //------------------------------------------------------------------
