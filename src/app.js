@@ -1,15 +1,10 @@
 const config = require('config');
-const shell = require('shelljs');
 const fs = require('fs');
 const path = require('path');
 const dicomParser = require('dicom-parser');
 const crypto = require('crypto');
 const fastify = require('fastify')({ logger: false });
 const { Readable } = require('stream');
-
-// make sure default directories exist
-shell.mkdir('-p', config.get('logDir'));
-shell.mkdir('-p', './data');
 
 const utils = require('./utils.js');
 
@@ -27,7 +22,7 @@ fastify.register(require('fastify-compress'), { global: true });
 const logger = utils.getLogger();
 
 // log exceptions
-process.on('uncaughtException', err => {
+process.on('uncaughtException', (err) => {
   logger.error('uncaught exception received:');
   logger.error(err.stack);
 });
@@ -36,11 +31,14 @@ process.on('uncaughtException', err => {
 
 process.on('SIGINT', async () => {
   await logger.info('shutting down web server...');
-  fastify.close().then(async () => {
-    await logger.info('webserver shutdown successfully');
-  }, (err) => {
-    logger.error('webserver shutdown failed', err);
-  })
+  fastify.close().then(
+    async () => {
+      await logger.info('webserver shutdown successfully');
+    },
+    (err) => {
+      logger.error('webserver shutdown failed', err);
+    }
+  );
   await logger.info('shutting down DICOM SCP server...');
   await utils.shutdown();
   process.exit(1);
