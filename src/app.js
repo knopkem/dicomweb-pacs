@@ -17,7 +17,8 @@ fastify.register(require('fastify-sensible'));
 
 fastify.register(require('fastify-helmet'), { contentSecurityPolicy: false });
 
-fastify.register(require('fastify-compress'), { global: true });
+// TOO SLOW
+// fastify.register(require('fastify-compress'), { global: true });
 
 const logger = utils.getLogger();
 
@@ -130,6 +131,7 @@ fastify.get('/viewer/rs/studies/:studyInstanceUid/series/:seriesInstanceUid/inst
     return;
   }
 
+  /* NOT WORKING!
   try {
     await utils.compressFile(pathname, studyPath);
   } catch (error) {
@@ -139,8 +141,9 @@ fastify.get('/viewer/rs/studies/:studyInstanceUid/series/:seriesInstanceUid/inst
     reply.send(msg);
     return;
   }
+*/
 
-  // read file from file system
+// read file from file system
   try {
     const data = await fs.promises.readFile(pathname);
     const dataset = dicomParser.parseDicom(data);
