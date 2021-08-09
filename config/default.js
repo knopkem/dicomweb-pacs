@@ -27,7 +27,7 @@ const config = {
     */
 
     // transfer syntax (e.g. compression of dicom files) used for transmission via wado and proposed to pacs
-    transferSyntax: '1.2.840.10008.1.2.4.80', // attention: compression not yet working with wado-rs
+    transferSyntax: '1.2.840.10008.1.2', // attention: compression not yet working with wado-rs
     logDir: "./logs",
     storagePath: "./data",
     webserverPort: 5000,

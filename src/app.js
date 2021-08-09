@@ -131,9 +131,8 @@ fastify.get('/viewer/rs/studies/:studyInstanceUid/series/:seriesInstanceUid/inst
     return;
   }
 
-  /* NOT WORKING!
   try {
-    await utils.compressFile(pathname, studyPath);
+    await utils.compressFile(pathname, studyPath, '1.2.840.10008.1.2');
   } catch (error) {
     logger.error(error);
     const msg = `failed to compress ${pathname}`;
@@ -141,7 +140,6 @@ fastify.get('/viewer/rs/studies/:studyInstanceUid/series/:seriesInstanceUid/inst
     reply.send(msg);
     return;
   }
-*/
 
 // read file from file system
   try {
