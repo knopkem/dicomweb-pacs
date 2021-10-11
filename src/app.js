@@ -6,7 +6,7 @@ const crypto = require('crypto');
 const fastify = require('fastify')({ logger: false });
 const { Readable } = require('stream');
 
-const utils = require('./utils.js');
+const utils = require('./utils');
 
 fastify.register(require('fastify-static'), {
   root: path.join(__dirname, '../public'),
