@@ -43,7 +43,7 @@ An easy to use PACS with DICOMWEB and DIMSE service support
   ```npm run import``` (server needs to be running)
 
 * open webbrowser and start viewing  
-  ```http://localhost:5000```
+  ```http://localhost:5001```
 
 ## What to modify
 

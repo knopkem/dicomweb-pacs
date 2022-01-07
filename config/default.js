@@ -7,9 +7,9 @@ const config = {
     },
     peers: [
       {
-        aet: "SERVER",
+        aet: "DICOMWEB_PROXY",
         ip: "127.0.0.1",
-        port: "104"
+        port: "8888"
       }],
       
     
@@ -30,7 +30,7 @@ const config = {
     transferSyntax: '1.2.840.10008.1.2', // attention: compression not yet working with wado-rs
     logDir: "./logs",
     storagePath: "./data",
-    webserverPort: 5000,
+    webserverPort: 5001,
     qidoMinChars: 0, // do not issue c-find if search contains less characters
     qidoAppendWildcard: true, // auto append * for patient name query
     permissiveMode: true, // when set to false, all AETs able to query and push need to be in peers
