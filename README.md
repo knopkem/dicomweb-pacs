@@ -69,7 +69,7 @@ An easy to use PACS with DICOMWEB and DIMSE service support
     ```
 
 * update webserver port:  
-  ```config.webserverPort = 5000;```
+  ```config.webserverPort = 5001;```
 
 ## License
 MIT
