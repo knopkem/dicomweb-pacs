@@ -60,7 +60,7 @@ const utils = {
 
     logger.info(`pacs-server listening on port: ${j.source.port}`);
 
-    dimse.startScp(JSON.stringify(j), (result) => {
+    dimse.startStoreScp(j, (result) => {
       // currently this will never finish
       logger.info(JSON.parse(result));
     });
@@ -74,7 +74,7 @@ const utils = {
     logger.info(`sending shutdown request to target: ${j.target.aet}`);
 
     return new Promise((resolve, reject) => {
-      dimse.shutdownScu(JSON.stringify(j), (result) => {
+      dimse.shutdownScu(j, (result) => {
         if (result && result.length > 0) {
           try {
             logger.info(JSON.parse(result));
@@ -97,7 +97,7 @@ const utils = {
     logger.info(`sending C-ECHO to target: ${j.target.aet}`);
 
     return new Promise((resolve, reject) => {
-      dimse.echoScu(JSON.stringify(j), (result) => {
+      dimse.echoScu(j, (result) => {
         if (result && result.length > 0) {
           try {
             logger.info(JSON.parse(result));
@@ -171,7 +171,7 @@ const utils = {
 
     // run find scu and return json response
     return new Promise((resolve, reject) => {
-      dimse.recompress(JSON.stringify(j), (result) => {
+      dimse.recompress(j, (result) => {
         if (result && result.length > 0) {
           try {
             const json = JSON.parse(result);
@@ -253,7 +253,7 @@ const utils = {
 
     // run find scu and return json response
     return new Promise((resolve) => {
-      dimse.findScu(JSON.stringify(j), (result) => {
+      dimse.findScu(j, (result) => {
         if (result && result.length > 0) {
           try {
             const json = JSON.parse(result);
