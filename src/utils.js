@@ -54,6 +54,7 @@ const utils = {
     j.peers.push(j.source);
     j.storagePath = config.get('storagePath');
     j.verbose = config.get('verboseLogging');
+    j.permissive = config.get('permissiveMode');
     j.netTransferPrefer = ts;
     j.netTransferPropose = ts;
     j.writeTransfer = ts;
