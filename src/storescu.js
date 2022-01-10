@@ -8,7 +8,7 @@ j.source = config.get('source');
 j.target = j.source;
 j.sourcePath = path.join(__dirname, '../import');
 j.verbose = true;
-dimse.storeScu(JSON.stringify(j), result => {
+dimse.storeScu(j, result => {
   if (result && result.length > 0) {
     try {
       console.log(JSON.parse(result));
