@@ -13,7 +13,7 @@ window.config = {
         qidoRoot: 'rs',
         wadoRoot: 'rs',
         qidoSupportsIncludeField: true,
-        imageRendering: 'wadors',
+        imageRendering: 'wadouri',
         thumbnailRendering: 'wadors',
         enableStudyLazyLoad: true,
         supportsFuzzyMatching: false,
