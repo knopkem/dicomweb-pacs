@@ -73,8 +73,9 @@ fastify.get('/viewer/rs/studies', async (req, reply) => {
 fastify.get('/viewer/rs/studies/:studyInstanceUid/metadata', async (req, reply) => {
   const { query } = req;
   query.StudyInstanceUID = req.params.studyInstanceUid;
-  const tags = utils.seriesLevelTags();
-  const json = await utils.doFind('SERIES', query, tags);
+  const stTags = utils.studyLevelTags();
+  const serTags = utils.seriesLevelTags();
+  const json = await utils.doFind('SERIES', query, [...stTags, ...serTags]);
   reply.header('Content-Type', 'application/dicom+json');
   reply.send(json);
 });
@@ -107,12 +108,14 @@ fastify.get('/viewer/rs/studies/:studyInstanceUid/series/:seriesInstanceUid/inst
 //------------------------------------------------------------------
 
 fastify.get('/viewer/rs/studies/:studyInstanceUid/series/:seriesInstanceUid/metadata', async (req, reply) => {
-  const tags = utils.imageMetadataTags();
+  const stTags = utils.studyLevelTags();
+  const serTags = utils.seriesLevelTags();
+  const imTags = utils.imageMetadataTags();
   const { query } = req;
   query.StudyInstanceUID = req.params.studyInstanceUid;
   query.SeriesInstanceUID = req.params.seriesInstanceUid;
 
-  const json = await utils.doFind('IMAGE', query, tags);
+  const json = await utils.doFind('IMAGE', query, [...stTags, ...serTags, ...imTags]);
   reply.header('Content-Type', 'application/dicom+json');
   reply.send(json);
 });
