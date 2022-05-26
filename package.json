@@ -43,7 +43,7 @@
   "dependencies": {
     "config": "^3.3.7",
     "dicom-data-dictionary": "^0.3.1",
-    "dicom-dimse-native": "^2.3.2",
+    "dicom-dimse-native": "^2.3.3",
     "dicom-parser": "^1.8.11",
     "fastify": "^3.25.3",
     "fastify-compress": "^3.7.0",
