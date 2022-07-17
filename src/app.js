@@ -1,29 +1,34 @@
+const server = require('fastify')({
+  logger: false
+})
+const fastifyStatic = require('@fastify/static');
+const fastifyCors  = require('@fastify/cors');
+const fastifySensible  = require('@fastify/sensible');
+const fastifyHelmet  = require('@fastify/helmet');
+
 const config = require('config');
 const fs = require('fs');
 const path = require('path');
 const dicomParser = require('dicom-parser');
 const crypto = require('crypto');
-const fastify = require('fastify')({ logger: false });
 const { Readable } = require('stream');
 
 const utils = require('./utils');
 
-fastify.register(require('fastify-static'), {
+server.register(fastifyStatic, {
   root: path.join(__dirname, '../public'),
 });
-
-fastify.setNotFoundHandler((req, res) => {
-  res.sendFile('index.html')
+server.setNotFoundHandler((_req, res) => {
+  res.sendFile('index.html');
 });
+server.register(fastifyCors, {});
+server.register(fastifySensible);
+server.register(fastifyHelmet, { contentSecurityPolicy: false });
 
-fastify.register(require('fastify-cors'), {});
 
-fastify.register(require('fastify-sensible'));
-
-fastify.register(require('fastify-helmet'), { contentSecurityPolicy: false });
-
-// TOO SLOW
-// fastify.register(require('fastify-compress'), { global: true });
+server.setErrorHandler(async err => {
+  console.log(err.message) // 'caught' 
+})
 
 const logger = utils.getLogger();
 
@@ -37,7 +42,7 @@ process.on('uncaughtException', (err) => {
 
 process.on('SIGINT', async () => {
   await logger.info('shutting down web server...');
-  fastify.close().then(
+  server.close().then(
     async () => {
       await logger.info('webserver shutdown successfully');
     },
@@ -52,49 +57,49 @@ process.on('SIGINT', async () => {
 
 //------------------------------------------------------------------
 
-fastify.get('/rs/studies', async (req, reply) => {
+server.get('/rs/studies', async (req, reply) => {
   const tags = utils.studyLevelTags();
   const json = await utils.doFind('STUDY', req.query, tags);
   reply.header('Content-Type', 'application/dicom+json');
-  reply.send(json);
+  return json;
 });
 
 //------------------------------------------------------------------
 
-fastify.get('/viewer/rs/studies', async (req, reply) => {
+server.get('/viewer/rs/studies', async (req, reply) => {
   const tags = utils.studyLevelTags();
   const json = await utils.doFind('STUDY', req.query, tags);
   reply.header('Content-Type', 'application/dicom+json');
-  reply.send(json);
+  return json;
 });
 
 //------------------------------------------------------------------
 
-fastify.get('/viewer/rs/studies/:studyInstanceUid/metadata', async (req, reply) => {
+server.get('/viewer/rs/studies/:studyInstanceUid/metadata', async (req, reply) => {
   const { query } = req;
   query.StudyInstanceUID = req.params.studyInstanceUid;
   const stTags = utils.studyLevelTags();
   const serTags = utils.seriesLevelTags();
   const json = await utils.doFind('SERIES', query, [...stTags, ...serTags]);
   reply.header('Content-Type', 'application/dicom+json');
-  reply.send(json);
+  return json;
 });
 
 //------------------------------------------------------------------
 
-fastify.get('/viewer/rs/studies/:studyInstanceUid/series', async (req, reply) => {
+server.get('/viewer/rs/studies/:studyInstanceUid/series', async (req, reply) => {
   const tags = utils.seriesLevelTags();
   const { query } = req;
   query.StudyInstanceUID = req.params.studyInstanceUid;
 
   const json = await utils.doFind('SERIES', query, tags);
   reply.header('Content-Type', 'application/dicom+json');
-  reply.send(json);
+  return json;
 });
 
 //------------------------------------------------------------------
 
-fastify.get('/viewer/rs/studies/:studyInstanceUid/series/:seriesInstanceUid/instances', async (req, reply) => {
+server.get('/viewer/rs/studies/:studyInstanceUid/series/:seriesInstanceUid/instances', async (req, reply) => {
   const tags = utils.imageLevelTags();
   const { query } = req;
   query.StudyInstanceUID = req.params.studyInstanceUid;
@@ -102,12 +107,12 @@ fastify.get('/viewer/rs/studies/:studyInstanceUid/series/:seriesInstanceUid/inst
 
   const json = await utils.doFind('IMAGE', query, tags);
   reply.header('Content-Type', 'application/dicom+json');
-  reply.send(json);
+  return json;
 });
 
 //------------------------------------------------------------------
 
-fastify.get('/viewer/rs/studies/:studyInstanceUid/series/:seriesInstanceUid/metadata', async (req, reply) => {
+server.get('/viewer/rs/studies/:studyInstanceUid/series/:seriesInstanceUid/metadata', async (req, reply) => {
   const stTags = utils.studyLevelTags();
   const serTags = utils.seriesLevelTags();
   const imTags = utils.imageMetadataTags();
@@ -117,12 +122,12 @@ fastify.get('/viewer/rs/studies/:studyInstanceUid/series/:seriesInstanceUid/meta
 
   const json = await utils.doFind('IMAGE', query, [...stTags, ...serTags, ...imTags]);
   reply.header('Content-Type', 'application/dicom+json');
-  reply.send(json);
+  return json;
 });
 
 //------------------------------------------------------------------
 
-fastify.get('/viewer/rs/studies/:studyInstanceUid/series/:seriesInstanceUid/instances/:sopInstanceUid/frames/:frame', async (req, reply) => {
+server.get('/viewer/rs/studies/:studyInstanceUid/series/:seriesInstanceUid/instances/:sopInstanceUid/frames/:frame', async (req, reply) => {
   const { studyInstanceUid, sopInstanceUid } = req.params;
 
   const storagePath = config.get('storagePath');
@@ -135,18 +140,15 @@ fastify.get('/viewer/rs/studies/:studyInstanceUid/series/:seriesInstanceUid/inst
   } catch (error) {
     logger.error(error);
     reply.code(404);
-    reply.send(`File ${pathname} not found!`);
-    return;
+    return `File ${pathname} not found!`;
   }
 
   try {
     await utils.compressFile(pathname, studyPath, '1.2.840.10008.1.2');
   } catch (error) {
     logger.error(error);
-    const msg = `failed to compress ${pathname}`;
     reply.code(500);
-    reply.send(msg);
-    return;
+    return `failed to compress ${pathname}`;
   }
 
 // read file from file system
@@ -175,17 +177,17 @@ fastify.get('/viewer/rs/studies/:studyInstanceUid/series/:seriesInstanceUid/inst
         this.push(null);
       },
     });
-    reply.send(readStream);
+    return readStream;
   } catch (error) {
     logger.error(error);
     reply.code(500);
-    reply.send(`Error getting the file: ${error}.`);
+    return `Error getting the file: ${error}.`;
   }
 });
 
 //------------------------------------------------------------------
 
-fastify.get('/viewer/wadouri', async (req, reply) => {
+server.get('/viewer/wadouri', async (req, reply) => {
   const studyUid = req.query.studyUID;
   const seriesUid = req.query.seriesUID;
   const imageUid = req.query.objectUID;
@@ -193,8 +195,7 @@ fastify.get('/viewer/wadouri', async (req, reply) => {
     const msg = `Error missing parameters.`;
     logger.error(msg);
     reply.code(500);
-    reply.send(msg);
-    return;
+    return msg;
   }
   const storagePath = config.get('storagePath');
   const studyPath = path.join(storagePath, studyUid);
@@ -206,8 +207,7 @@ fastify.get('/viewer/wadouri', async (req, reply) => {
     logger.error(error);
     const msg = `file not found ${pathname}`;
     reply.code(500);
-    reply.send(msg);
-    return;
+    return msg;
   }
 
   try {
@@ -216,32 +216,29 @@ fastify.get('/viewer/wadouri', async (req, reply) => {
     logger.error(error);
     const msg = `failed to compress ${pathname}`;
     reply.code(500);
-    reply.send(msg);
-    return;
+    return msg;
   }
 
-  // if the file is found, set Content-type and send data
-  reply.header('Content-Type', 'application/dicom+json');
-
   // read file from file system
-  fs.readFile(pathname, (err, data) => {
-    if (err) {
-      const msg = `Error getting the file: ${err}.`;
-      logger.error(msg);
-      reply.setCode(500);
-      reply.send(msg);
-    }
-    reply.send(data);
-  });
+  try {
+    const data = await fs.promises.readFile(pathname);
+    reply.header('Content-Type', 'application/dicom+json');
+    return data;
+  } catch (error) {
+    const msg = `Error getting the file: ${error}.`;
+    logger.error(msg);
+    reply.setCode(500);
+    return msg;
+  }
 });
 
 //------------------------------------------------------------------
 
 const port = config.get('webserverPort');
 logger.info('starting...');
-fastify.listen(port, '0.0.0.0', (err, address) => {
+server.listen({ port, host: '0.0.0.0' }, async (err, address) => {
   if (err) {
-    logger.error(err, address);
+    await logger.error(err, address);
     process.exit(1);
   }
   logger.info(`web-server listening on port: ${port}`);
