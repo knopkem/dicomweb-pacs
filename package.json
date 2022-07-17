@@ -41,8 +41,6 @@
   },
   "homepage": "https://github.com/knopkem/dicomweb-pacs#readme",
   "dependencies": {
-    "@fastify/autoload": "^5.0.0",
-    "@fastify/compress": "^6.0.0",
     "@fastify/cors": "^8.0.0",
     "@fastify/helmet": "^9.1.0",
     "@fastify/sensible": "^5.0.0",

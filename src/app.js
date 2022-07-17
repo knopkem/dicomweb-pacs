@@ -1,4 +1,6 @@
-const fastify = require('fastify');
+const server = require('fastify')({
+  logger: false
+})
 const fastifyStatic = require('@fastify/static');
 const fastifyCors  = require('@fastify/cors');
 const fastifySensible  = require('@fastify/sensible');
@@ -13,7 +15,6 @@ const { Readable } = require('stream');
 
 const utils = require('./utils');
 
-const server = fastify();
 server.register(fastifyStatic, {
   root: path.join(__dirname, '../public'),
 });
@@ -23,6 +24,11 @@ server.setNotFoundHandler((_req, res) => {
 server.register(fastifyCors, {});
 server.register(fastifySensible);
 server.register(fastifyHelmet, { contentSecurityPolicy: false });
+
+
+server.setErrorHandler(async err => {
+  console.log(err.message) // 'caught' 
+})
 
 const logger = utils.getLogger();
 
@@ -55,7 +61,7 @@ server.get('/rs/studies', async (req, reply) => {
   const tags = utils.studyLevelTags();
   const json = await utils.doFind('STUDY', req.query, tags);
   reply.header('Content-Type', 'application/dicom+json');
-  reply.send(json);
+  return json;
 });
 
 //------------------------------------------------------------------
@@ -64,7 +70,7 @@ server.get('/viewer/rs/studies', async (req, reply) => {
   const tags = utils.studyLevelTags();
   const json = await utils.doFind('STUDY', req.query, tags);
   reply.header('Content-Type', 'application/dicom+json');
-  reply.send(json);
+  return json;
 });
 
 //------------------------------------------------------------------
@@ -76,7 +82,7 @@ server.get('/viewer/rs/studies/:studyInstanceUid/metadata', async (req, reply) =
   const serTags = utils.seriesLevelTags();
   const json = await utils.doFind('SERIES', query, [...stTags, ...serTags]);
   reply.header('Content-Type', 'application/dicom+json');
-  reply.send(json);
+  return json;
 });
 
 //------------------------------------------------------------------
@@ -88,7 +94,7 @@ server.get('/viewer/rs/studies/:studyInstanceUid/series', async (req, reply) => 
 
   const json = await utils.doFind('SERIES', query, tags);
   reply.header('Content-Type', 'application/dicom+json');
-  reply.send(json);
+  return json;
 });
 
 //------------------------------------------------------------------
@@ -101,7 +107,7 @@ server.get('/viewer/rs/studies/:studyInstanceUid/series/:seriesInstanceUid/insta
 
   const json = await utils.doFind('IMAGE', query, tags);
   reply.header('Content-Type', 'application/dicom+json');
-  reply.send(json);
+  return json;
 });
 
 //------------------------------------------------------------------
@@ -116,7 +122,7 @@ server.get('/viewer/rs/studies/:studyInstanceUid/series/:seriesInstanceUid/metad
 
   const json = await utils.doFind('IMAGE', query, [...stTags, ...serTags, ...imTags]);
   reply.header('Content-Type', 'application/dicom+json');
-  reply.send(json);
+  return json;
 });
 
 //------------------------------------------------------------------
@@ -134,18 +140,15 @@ server.get('/viewer/rs/studies/:studyInstanceUid/series/:seriesInstanceUid/insta
   } catch (error) {
     logger.error(error);
     reply.code(404);
-    reply.send(`File ${pathname} not found!`);
-    return;
+    return `File ${pathname} not found!`;
   }
 
   try {
     await utils.compressFile(pathname, studyPath, '1.2.840.10008.1.2');
   } catch (error) {
     logger.error(error);
-    const msg = `failed to compress ${pathname}`;
     reply.code(500);
-    reply.send(msg);
-    return;
+    return `failed to compress ${pathname}`;
   }
 
 // read file from file system
@@ -174,11 +177,11 @@ server.get('/viewer/rs/studies/:studyInstanceUid/series/:seriesInstanceUid/insta
         this.push(null);
       },
     });
-    reply.send(readStream);
+    return readStream;
   } catch (error) {
     logger.error(error);
     reply.code(500);
-    reply.send(`Error getting the file: ${error}.`);
+    return `Error getting the file: ${error}.`;
   }
 });
 
@@ -192,8 +195,7 @@ server.get('/viewer/wadouri', async (req, reply) => {
     const msg = `Error missing parameters.`;
     logger.error(msg);
     reply.code(500);
-    reply.send(msg);
-    return;
+    return msg;
   }
   const storagePath = config.get('storagePath');
   const studyPath = path.join(storagePath, studyUid);
@@ -205,8 +207,7 @@ server.get('/viewer/wadouri', async (req, reply) => {
     logger.error(error);
     const msg = `file not found ${pathname}`;
     reply.code(500);
-    reply.send(msg);
-    return;
+    return msg;
   }
 
   try {
@@ -215,23 +216,20 @@ server.get('/viewer/wadouri', async (req, reply) => {
     logger.error(error);
     const msg = `failed to compress ${pathname}`;
     reply.code(500);
-    reply.send(msg);
-    return;
+    return msg;
   }
 
-  // if the file is found, set Content-type and send data
-  reply.header('Content-Type', 'application/dicom+json');
-
   // read file from file system
-  fs.readFile(pathname, (err, data) => {
-    if (err) {
-      const msg = `Error getting the file: ${err}.`;
-      logger.error(msg);
-      reply.setCode(500);
-      reply.send(msg);
-    }
-    reply.send(data);
-  });
+  try {
+    const data = await fs.promises.readFile(pathname);
+    reply.header('Content-Type', 'application/dicom+json');
+    return data;
+  } catch (error) {
+    const msg = `Error getting the file: ${error}.`;
+    logger.error(msg);
+    reply.setCode(500);
+    return msg;
+  }
 });
 
 //------------------------------------------------------------------
