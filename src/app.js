@@ -1,29 +1,28 @@
+const fastify = require('fastify');
+const fastifyStatic = require('@fastify/static');
+const fastifyCors  = require('@fastify/cors');
+const fastifySensible  = require('@fastify/sensible');
+const fastifyHelmet  = require('@fastify/helmet');
+
 const config = require('config');
 const fs = require('fs');
 const path = require('path');
 const dicomParser = require('dicom-parser');
 const crypto = require('crypto');
-const fastify = require('fastify')({ logger: false });
 const { Readable } = require('stream');
 
 const utils = require('./utils');
 
-fastify.register(require('fastify-static'), {
+const server = fastify();
+server.register(fastifyStatic, {
   root: path.join(__dirname, '../public'),
 });
-
-fastify.setNotFoundHandler((req, res) => {
-  res.sendFile('index.html')
+server.setNotFoundHandler((_req, res) => {
+  res.sendFile('index.html');
 });
-
-fastify.register(require('fastify-cors'), {});
-
-fastify.register(require('fastify-sensible'));
-
-fastify.register(require('fastify-helmet'), { contentSecurityPolicy: false });
-
-// TOO SLOW
-// fastify.register(require('fastify-compress'), { global: true });
+server.register(fastifyCors, {});
+server.register(fastifySensible);
+server.register(fastifyHelmet, { contentSecurityPolicy: false });
 
 const logger = utils.getLogger();
 
@@ -37,7 +36,7 @@ process.on('uncaughtException', (err) => {
 
 process.on('SIGINT', async () => {
   await logger.info('shutting down web server...');
-  fastify.close().then(
+  server.close().then(
     async () => {
       await logger.info('webserver shutdown successfully');
     },
@@ -52,7 +51,7 @@ process.on('SIGINT', async () => {
 
 //------------------------------------------------------------------
 
-fastify.get('/rs/studies', async (req, reply) => {
+server.get('/rs/studies', async (req, reply) => {
   const tags = utils.studyLevelTags();
   const json = await utils.doFind('STUDY', req.query, tags);
   reply.header('Content-Type', 'application/dicom+json');
@@ -61,7 +60,7 @@ fastify.get('/rs/studies', async (req, reply) => {
 
 //------------------------------------------------------------------
 
-fastify.get('/viewer/rs/studies', async (req, reply) => {
+server.get('/viewer/rs/studies', async (req, reply) => {
   const tags = utils.studyLevelTags();
   const json = await utils.doFind('STUDY', req.query, tags);
   reply.header('Content-Type', 'application/dicom+json');
@@ -70,7 +69,7 @@ fastify.get('/viewer/rs/studies', async (req, reply) => {
 
 //------------------------------------------------------------------
 
-fastify.get('/viewer/rs/studies/:studyInstanceUid/metadata', async (req, reply) => {
+server.get('/viewer/rs/studies/:studyInstanceUid/metadata', async (req, reply) => {
   const { query } = req;
   query.StudyInstanceUID = req.params.studyInstanceUid;
   const stTags = utils.studyLevelTags();
@@ -82,7 +81,7 @@ fastify.get('/viewer/rs/studies/:studyInstanceUid/metadata', async (req, reply) 
 
 //------------------------------------------------------------------
 
-fastify.get('/viewer/rs/studies/:studyInstanceUid/series', async (req, reply) => {
+server.get('/viewer/rs/studies/:studyInstanceUid/series', async (req, reply) => {
   const tags = utils.seriesLevelTags();
   const { query } = req;
   query.StudyInstanceUID = req.params.studyInstanceUid;
@@ -94,7 +93,7 @@ fastify.get('/viewer/rs/studies/:studyInstanceUid/series', async (req, reply) =>
 
 //------------------------------------------------------------------
 
-fastify.get('/viewer/rs/studies/:studyInstanceUid/series/:seriesInstanceUid/instances', async (req, reply) => {
+server.get('/viewer/rs/studies/:studyInstanceUid/series/:seriesInstanceUid/instances', async (req, reply) => {
   const tags = utils.imageLevelTags();
   const { query } = req;
   query.StudyInstanceUID = req.params.studyInstanceUid;
@@ -107,7 +106,7 @@ fastify.get('/viewer/rs/studies/:studyInstanceUid/series/:seriesInstanceUid/inst
 
 //------------------------------------------------------------------
 
-fastify.get('/viewer/rs/studies/:studyInstanceUid/series/:seriesInstanceUid/metadata', async (req, reply) => {
+server.get('/viewer/rs/studies/:studyInstanceUid/series/:seriesInstanceUid/metadata', async (req, reply) => {
   const stTags = utils.studyLevelTags();
   const serTags = utils.seriesLevelTags();
   const imTags = utils.imageMetadataTags();
@@ -122,7 +121,7 @@ fastify.get('/viewer/rs/studies/:studyInstanceUid/series/:seriesInstanceUid/meta
 
 //------------------------------------------------------------------
 
-fastify.get('/viewer/rs/studies/:studyInstanceUid/series/:seriesInstanceUid/instances/:sopInstanceUid/frames/:frame', async (req, reply) => {
+server.get('/viewer/rs/studies/:studyInstanceUid/series/:seriesInstanceUid/instances/:sopInstanceUid/frames/:frame', async (req, reply) => {
   const { studyInstanceUid, sopInstanceUid } = req.params;
 
   const storagePath = config.get('storagePath');
@@ -185,7 +184,7 @@ fastify.get('/viewer/rs/studies/:studyInstanceUid/series/:seriesInstanceUid/inst
 
 //------------------------------------------------------------------
 
-fastify.get('/viewer/wadouri', async (req, reply) => {
+server.get('/viewer/wadouri', async (req, reply) => {
   const studyUid = req.query.studyUID;
   const seriesUid = req.query.seriesUID;
   const imageUid = req.query.objectUID;
@@ -239,9 +238,9 @@ fastify.get('/viewer/wadouri', async (req, reply) => {
 
 const port = config.get('webserverPort');
 logger.info('starting...');
-fastify.listen(port, '0.0.0.0', (err, address) => {
+server.listen({ port, host: '0.0.0.0' }, async (err, address) => {
   if (err) {
-    logger.error(err, address);
+    await logger.error(err, address);
     process.exit(1);
   }
   logger.info(`web-server listening on port: ${port}`);
