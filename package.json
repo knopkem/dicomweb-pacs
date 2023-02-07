@@ -45,7 +45,7 @@
     "@fastify/helmet": "^9.1.0",
     "@fastify/sensible": "^5.1.1",
     "@fastify/static": "^6.5.0",
-    "config": "^3.3.7",
+    "config": "^3.3.9",
     "dicom-data-dictionary": "^0.3.1",
     "dicom-dimse-native": "^2.4.0",
     "dicom-parser": "^1.8.13",
