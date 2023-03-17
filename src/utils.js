@@ -27,7 +27,7 @@ const findDicomName = (name) => {
   // eslint-disable-next-line no-restricted-syntax
   for (const key of Object.keys(dict.standardDataElements)) {
     const value = dict.standardDataElements[key];
-    if (value.name === name) {
+    if ((value.name === name) || (name === key)) {
       return key;
     }
   }
