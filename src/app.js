@@ -127,6 +127,22 @@ server.get('/viewer/rs/studies/:studyInstanceUid/series/:seriesInstanceUid/metad
 
 //------------------------------------------------------------------
 
+server.get('/viewer/rs/studies/:studyInstanceUid/series/:seriesInstanceUid/instances/:sopInstanceUid/metadata', async (req, reply) => {
+  const stTags = utils.studyLevelTags();
+  const serTags = utils.seriesLevelTags();
+  const imTags = utils.imageMetadataTags();
+  const { query } = req;
+  query.StudyInstanceUID = req.params.studyInstanceUid;
+  query.SeriesInstanceUID = req.params.seriesInstanceUid;
+  query.SOPInstanceUID - req.params.sopInstanceUid;
+
+  const json = await utils.doFind('IMAGE', query, [...stTags, ...serTags, ...imTags]);
+  reply.header('Content-Type', 'application/dicom+json');
+  return json;
+});
+
+//------------------------------------------------------------------
+
 server.get('/viewer/rs/studies/:studyInstanceUid/series/:seriesInstanceUid/instances/:sopInstanceUid/frames/:frame', async (req, reply) => {
   const { studyInstanceUid, sopInstanceUid } = req.params;
 
