@@ -41,25 +41,25 @@
   },
   "homepage": "https://github.com/knopkem/dicomweb-pacs#readme",
   "dependencies": {
-    "@fastify/cors": "^8.2.0",
-    "@fastify/helmet": "^9.1.0",
-    "@fastify/sensible": "^5.1.1",
-    "@fastify/static": "^6.5.0",
-    "config": "^3.3.7",
+    "@fastify/cors": "^8.2.1",
+    "@fastify/helmet": "^10.1.0",
+    "@fastify/sensible": "^5.2.0",
+    "@fastify/static": "^6.10.1",
+    "config": "^3.3.9",
     "dicom-data-dictionary": "^0.3.1",
     "dicom-dimse-native": "^2.4.1",
-    "dicom-parser": "^1.8.13",
-    "fastify": "^4.10.2",
+    "dicom-parser": "^1.8.21",
+    "fastify": "^4.17.0",
     "shelljs": "^0.8.5",
     "simple-node-logger": "^21.8.12",
     "fs-walk": "^0.0.2"
   },
   "devDependencies": {
-    "eslint": "^8.23.0",
+    "eslint": "^8.39.0",
     "eslint-config-airbnb-base": "^15.0.0",
-    "eslint-config-prettier": "^8.5.0",
-    "eslint-plugin-import": "^2.26.0",
+    "eslint-config-prettier": "^8.8.0",
+    "eslint-plugin-import": "^2.27.5",
     "eslint-plugin-prettier": "^4.2.1",
-    "prettier": "^2.7.1"
+    "prettier": "^2.8.8"
   }
 }
