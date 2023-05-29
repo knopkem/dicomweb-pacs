@@ -42,7 +42,7 @@
   "homepage": "https://github.com/knopkem/dicomweb-pacs#readme",
   "dependencies": {
     "@fastify/cors": "^8.2.1",
-    "@fastify/helmet": "^10.1.0",
+    "@fastify/helmet": "^10.1.1",
     "@fastify/sensible": "^5.2.0",
     "@fastify/static": "^6.10.1",
     "config": "^3.3.9",
