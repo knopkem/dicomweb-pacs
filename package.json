@@ -1,6 +1,6 @@
 {
   "name": "dicomweb-pacs",
-  "version": "1.4.1",
+  "version": "1.4.2",
   "description": "A self contained easy to use PACS with DICOMWEB and DIMSE service support",
   "main": "app.js",
   "scripts": {
@@ -47,7 +47,7 @@
     "@fastify/static": "^6.10.1",
     "config": "^3.3.9",
     "dicom-data-dictionary": "^0.3.1",
-    "dicom-dimse-native": "^2.4.1",
+    "dicom-dimse-native": "^2.4.2",
     "dicom-parser": "^1.8.21",
     "fastify": "^4.17.0",
     "shelljs": "^0.8.5",
