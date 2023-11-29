@@ -41,6 +41,7 @@
   },
   "homepage": "https://github.com/knopkem/dicomweb-pacs#readme",
   "dependencies": {
+    "@fastify/autoload": "^5.8.0",
     "@fastify/cors": "^8.4.1",
     "@fastify/helmet": "^11.1.1",
     "@fastify/sensible": "^5.5.0",
@@ -50,9 +51,9 @@
     "dicom-dimse-native": "^2.4.2",
     "dicom-parser": "^1.8.21",
     "fastify": "^4.24.3",
+    "fs-walk": "^0.0.2",
     "shelljs": "^0.8.5",
-    "simple-node-logger": "^21.8.12",
-    "fs-walk": "^0.0.2"
+    "simple-node-logger": "^21.8.12"
   },
   "devDependencies": {
     "eslint": "^8.54.0",

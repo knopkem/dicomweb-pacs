@@ -168,9 +168,8 @@ const utils = {
       storagePath: outputDirectory,
       writeTransfer: transferSyntax || config.get('transferSyntax'),
       verbose: config.get('verboseLogging'),
+      enableRecompression: true,
     };
-
-    // run find scu and return json response
     return new Promise((resolve, reject) => {
       dimse.recompress(j, (result) => {
         if (result && result.length > 0) {
