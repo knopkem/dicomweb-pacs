@@ -11,6 +11,8 @@ const config = require('config');
 const path = require('path');
 const utils = require('./utils');
 
+const logger = utils.getLogger();
+
 server.register(fastifyStatic, {
   root: path.join(__dirname, '../public'),
 });
@@ -37,10 +39,8 @@ server.register(fastifyAutoload, {
 });
 
 server.setErrorHandler(async err => {
-  console.error(err.message) // 'caught' 
+  logger.error(err.message) // 'caught' 
 })
-
-const logger = utils.getLogger();
 
 // log exceptions
 process.on('uncaughtException', (err) => {
