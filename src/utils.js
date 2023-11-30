@@ -1,6 +1,7 @@
 const config = require('config');
 const dict = require('dicom-data-dictionary');
 const dimse = require('dicom-dimse-native');
+const dict2 = require('@iwharris/dicom-data-dictionary');
 const fs = require('fs');
 const shell = require('shelljs');
 
@@ -32,6 +33,15 @@ const findDicomName = (name) => {
     }
   }
   return undefined;
+};
+
+
+const findVR = (name) => {
+  const dataElement =  dict2.get_element(name);
+  if (dataElement) {
+    return dataElement.vr;
+  }
+  return '';
 };
 
 //------------------------------------------------------------------
@@ -225,16 +235,22 @@ const utils = {
     });
 
     // add search param
-    let isValidInput = false;
+    let invalidInput = false;
+    const minCharsQido = config.get('qidoMinChars');
     Object.keys(query).forEach((propName) => {
       const tag = findDicomName(propName);
+      const vr = findVR(propName);
       if (tag) {
         let v = query[propName];
-        // patient name check
-        if (tag === '00100010') {
-          // check if minimum number of chars for patient name are given
-          if (config.get('qidoMinChars') > v.length) {
-            isValidInput = true;
+        // string vr types check
+        if (['PN', 'LO', 'LT', 'SH', 'ST'].includes(vr)) {
+          // just make sure to remove any wildcards from prefix and suffix
+          v = v.replace(/^[*]/, '');
+          v = v.replace(/[*]$/, '');
+          
+          // check if minimum number of chars are reached from input
+          if (minCharsQido > v.length) {
+            invalidInput = true;
           }
           // auto append wildcard
           if (config.get('qidoAppendWildcard')) {
@@ -244,8 +260,8 @@ const utils = {
         j.tags.push({ key: tag, value: v });
       }
     });
-    // return with empty results if invalid
-    if (isValidInput) {
+
+    if (invalidInput) {
       return [];
     }
 
