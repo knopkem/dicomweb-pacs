@@ -9,6 +9,8 @@ An easy to use PACS with DICOMWEB and DIMSE service support
 * multithreaded
 * sqlite backend
 
+No need for a server, try the [standalone desktop edition](https://github.com/knopkem/pacsnode).
+
 ## Prerequisite
 
 * nodejs 12 or newer
