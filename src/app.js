@@ -1,11 +1,12 @@
 const server = require('fastify')({
-  logger: false
-})
+  logger: false,
+});
 const fastifyStatic = require('@fastify/static');
-const fastifyCors  = require('@fastify/cors');
-const fastifySensible  = require('@fastify/sensible');
-const fastifyHelmet  = require('@fastify/helmet');
+const fastifyCors = require('@fastify/cors');
+const fastifySensible = require('@fastify/sensible');
+const fastifyHelmet = require('@fastify/helmet');
 const fastifyAutoload = require('@fastify/autoload');
+const closeWithGrace = require('close-with-grace');
 
 const config = require('config');
 const path = require('path');
@@ -21,14 +22,12 @@ server.setNotFoundHandler((_req, res) => {
 });
 server.register(fastifyCors, {});
 server.register(fastifySensible);
-server.register(fastifyHelmet, 
-  {
-    contentSecurityPolicy: false,
-    crossOriginEmbedderPolicy: { policy: 'require-corp' },
-    crossOriginResourcePolicy: { policy: 'same-site' },
-    crossOriginOpenerPolicy: { policy: 'same-origin' },
-  }
-);
+server.register(fastifyHelmet, {
+  contentSecurityPolicy: false,
+  crossOriginEmbedderPolicy: { policy: 'require-corp' },
+  crossOriginResourcePolicy: { policy: 'same-site' },
+  crossOriginOpenerPolicy: { policy: 'same-origin' },
+});
 
 server.register(fastifyAutoload, {
   dir: path.join(__dirname, 'routes'),
@@ -38,9 +37,9 @@ server.register(fastifyAutoload, {
   options: { prefix: '/viewer' },
 });
 
-server.setErrorHandler(async err => {
-  logger.error(err.message) // 'caught' 
-})
+server.setErrorHandler(async (err) => {
+  logger.error(err.message); // 'caught'
+});
 
 // log exceptions
 process.on('uncaughtException', (err) => {
@@ -49,20 +48,17 @@ process.on('uncaughtException', (err) => {
 });
 
 //------------------------------------------------------------------
-
-process.on('SIGINT', async () => {
-  await logger.info('shutting down web server...');
-  server.close().then(
-    async () => {
-      await logger.info('webserver shutdown successfully');
-    },
-    (err) => {
-      logger.error('webserver shutdown failed', err);
-    }
-  );
-  await logger.info('shutting down DICOM SCP server...');
-  await utils.shutdown();
-  process.exit(1);
+closeWithGrace({ delay: 500 }, async ({ signal, err, manual }) => {
+  if (err) {
+    logger.error(err);
+  }
+  logger.info('shutting down...', signal, manual);
+  try {
+    await server.close();
+    await utils.shutdown();
+  } catch (error) {
+    logger.error(error);
+  }
 });
 
 //------------------------------------------------------------------

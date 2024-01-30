@@ -4,6 +4,7 @@ config/development.js
 config/production.js
 keycloak.json
 data
+dicom.log
 
 # Logs
 logs

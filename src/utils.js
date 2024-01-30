@@ -28,16 +28,15 @@ const findDicomName = (name) => {
   // eslint-disable-next-line no-restricted-syntax
   for (const key of Object.keys(dict.standardDataElements)) {
     const value = dict.standardDataElements[key];
-    if ((value.name === name) || (name === key)) {
+    if (value.name === name || name === key) {
       return key;
     }
   }
   return undefined;
 };
 
-
 const findVR = (name) => {
-  const dataElement =  dict2.get_element(name);
+  const dataElement = dict2.get_element(name);
   if (dataElement) {
     return dataElement.vr;
   }
@@ -88,7 +87,12 @@ const utils = {
       dimse.shutdownScu(j, (result) => {
         if (result && result.length > 0) {
           try {
-            logger.info(JSON.parse(result));
+            const res = JSON.parse(result);
+            if (res.code === 2) {
+              logger.error(res.message);
+            } else {
+              logger.info(res.message);
+            }
             resolve();
           } catch (error) {
             logger.error(result);
@@ -111,7 +115,12 @@ const utils = {
       dimse.echoScu(j, (result) => {
         if (result && result.length > 0) {
           try {
-            logger.info(JSON.parse(result));
+            const res = JSON.parse(result);
+            if (res.code === 2) {
+              logger.error(res.message);
+            } else {
+              logger.info(res.message);
+            }
             resolve();
           } catch (error) {
             logger.error(result);
@@ -122,7 +131,8 @@ const utils = {
       });
     });
   },
-  fileExists: (pathname) => new Promise((resolve, reject) => {
+  fileExists: (pathname) =>
+    new Promise((resolve, reject) => {
       fs.access(pathname, (err) => {
         if (err) {
           reject(err);
@@ -132,46 +142,46 @@ const utils = {
       });
     }),
   studyLevelTags: () => [
-      '00080005',
-      '00080020',
-      '00080030',
-      '00080050',
-      '00080054',
-      '00080056',
-      '00080061',
-      '00080090',
-      '00081190',
-      '00100010',
-      '00100020',
-      '00100030',
-      '00100040',
-      '0020000D',
-      '00200010',
-      '00201206',
-      '00201208',
-    ],
+    '00080005',
+    '00080020',
+    '00080030',
+    '00080050',
+    '00080054',
+    '00080056',
+    '00080061',
+    '00080090',
+    '00081190',
+    '00100010',
+    '00100020',
+    '00100030',
+    '00100040',
+    '0020000D',
+    '00200010',
+    '00201206',
+    '00201208',
+  ],
   seriesLevelTags: () => ['00080005', '00080054', '00080056', '00080060', '0008103E', '00081190', '0020000E', '00200011', '00201209'],
   imageLevelTags: () => ['00080016', '00080018'],
   imageMetadataTags: () => [
-      '00080016',
-      '00080018',
-      '00080060',
-      '00280002',
-      '00280004',
-      '00280010',
-      '00280011',
-      '00280030',
-      '00280100',
-      '00280101',
-      '00280102',
-      '00280103',
-      '00281050',
-      '00281051',
-      '00281052',
-      '00281053',
-      '00200032',
-      '00200037',
-    ],
+    '00080016',
+    '00080018',
+    '00080060',
+    '00280002',
+    '00280004',
+    '00280010',
+    '00280011',
+    '00280030',
+    '00280100',
+    '00280101',
+    '00280102',
+    '00280103',
+    '00281050',
+    '00281051',
+    '00281052',
+    '00281053',
+    '00200032',
+    '00200037',
+  ],
   compressFile: (inputFile, outputDirectory, transferSyntax) => {
     const j = {
       sourcePath: inputFile,
@@ -247,7 +257,7 @@ const utils = {
           // just make sure to remove any wildcards from prefix and suffix
           v = v.replace(/^[*]/, '');
           v = v.replace(/[*]$/, '');
-          
+
           // check if minimum number of chars are reached from input
           if (minCharsQido > v.length) {
             invalidInput = true;
