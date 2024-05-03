@@ -5,6 +5,7 @@ config/production.js
 keycloak.json
 data
 dicom.log
+.DS_Store
 
 # Logs
 logs
