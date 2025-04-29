@@ -54,7 +54,7 @@
     "dicom-parser": "^1.8.21",
     "fastify": "^4.26.0",
     "fs-walk": "^0.0.2",
-    "shelljs": "^0.8.5",
+    "shelljs": "^0.9.2",
     "simple-node-logger": "^21.8.12"
   },
   "devDependencies": {
