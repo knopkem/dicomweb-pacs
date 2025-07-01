@@ -56,6 +56,7 @@ closeWithGrace({ delay: 500 }, async ({ signal, err, manual }) => {
   try {
     await server.close();
     await utils.shutdown();
+    server.close();
   } catch (error) {
     logger.error(error);
   }
