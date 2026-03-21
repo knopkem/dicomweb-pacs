@@ -2,6 +2,8 @@
 .node-persist
 config/development.js
 config/production.js
+config/development.json
+config/production.json
 keycloak.json
 data
 dicom.log
@@ -45,6 +47,7 @@ bower_components
 
 # Compiled binary addons (https://nodejs.org/api/addons.html)
 build/Release
+build/
 
 # Dependency directories
 node_modules/

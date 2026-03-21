@@ -1,13 +1,7 @@
-module.exports = { 
-    "extends": [
-        "airbnb-base",
-        "prettier"
-    ]
-    ,
-     "parserOptions": {
-        "ecmaVersion": 11
-    },
-    "env": {
-        "es6": true
-    }
+/* eslint-env node */
+module.exports = {
+  extends: ['eslint:recommended', 'plugin:@typescript-eslint/recommended', 'prettier'],
+  parser: '@typescript-eslint/parser',
+  plugins: ['@typescript-eslint'],
+  root: true,
 };

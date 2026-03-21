@@ -1,0 +1,24 @@
+{
+  "source": {
+    "aet": "DICOMWEB_PACS",
+    "ip": "127.0.0.1",
+    "port": "8888"
+  },
+  "peers": [
+    {
+      "aet": "CONQUESTSRV1",
+      "ip": "127.0.0.1",
+      "port": "5678"
+    }
+  ],
+  "transferSyntax": "1.2.840.10008.1.2",
+  "mimeType": "application/dicom",
+  "logDir": "./logs",
+  "storagePath": "./data",
+  "httpPort": 5001,
+  "httpIp": "0.0.0.0",
+  "qidoMinChars": 0,
+  "qidoAppendWildcard": true,
+  "permissiveMode": true,
+  "verboseLogging": false
+}

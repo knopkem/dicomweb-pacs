@@ -1,77 +1,92 @@
 # dicomweb-pacs
 
-An easy to use PACS with DICOMWEB and DIMSE service support
+An easy to use PACS with DICOMWEB and DIMSE service support.
 
 ## Description
-* A nodejs tool to easily spawn a PACS server including DICOM viewer connected via DICOMWEB (QIDO-RS and WADO-RS).
-* Comes preinstalled with the popular [OHIF DICOM Web Viewer](https://github.com/OHIF/Viewers) (version 3.10.1).
-* Supports OHIF MPR (vtk.js) feature for viewing volumetric datasets
-* multithreaded
-* sqlite backend
+
+- A Node.js PACS service with DICOMWEB (QIDO-RS and WADO-RS) and DIMSE support.
+- Comes preinstalled with the popular [OHIF DICOM Web Viewer](https://github.com/OHIF/Viewers) (version 3.10.1).
+- Supports OHIF MPR (vtk.js) for volumetric datasets.
+- Uses a TypeScript codebase and a modular structure similar to `dicomweb-proxy`.
 
 No need for a server, try the [standalone desktop edition](https://github.com/knopkem/pacsnode).
 
 ## Prerequisite
 
-* nodejs 12 or newer
+- A modern Node.js runtime.
 
 ## Setup Instructions - npm
 
-* install in empty directory:  
-  ```npm init -y```  
-  ```npm install dicomweb-pacs```
-
-* update config file located in:  
-  ```./node_modules/dicomweb-pacs/config```
-
-* start pacs:  
-  ```npx dicomweb-pacs```
+- Install in an empty directory:
+  ```bash
+  npm init -y
+  npm install dicomweb-pacs
+  ```
+- Update the config file in `./node_modules/dicomweb-pacs/config/default.json`.
+- Start the PACS:
+  ```bash
+  npx dicomweb-pacs
+  ```
 
 ## Setup Instructions - source
 
-* clone repository and install dependencies  
-  ```npm install```
-
-* update config file located in:  
-  ```./config```
-
-* run:  
-  ```npm start```
-
-* import DICOM images: use any c-store-scu to push to internal store-scp  
-  ```(AET: DICOMWEB_PACS   port: 8888)```
-
-* (or use internal store-scu): put DICOM into import directory and run  
-  ```npm run import``` (server needs to be running)
-
-* open webbrowser and start viewing  
-  ```http://localhost:5001```
+- Clone the repository and install dependencies:
+  ```bash
+  npm install
+  ```
+- Update `./config/default.json`.
+- Start the development server:
+  ```bash
+  npm start
+  ```
+- Build the production bundle:
+  ```bash
+  npm run build
+  node build/app.js
+  ```
+- Import DICOM images with any C-STORE-SCU to the internal store-SCP:
+  ```text
+  AET: DICOMWEB_PACS   port: 8888
+  ```
+- Or put DICOM files into `./import` and run:
+  ```bash
+  npm run import
+  ```
+  This imports the files directly into the PACS storage path.
+- Open the viewer at `http://localhost:5001`.
 
 ## What to modify
 
-* (optional) change our port or AET 
-
+- Change the PACS AET or DIMSE port in `config/default.json`:
+  ```json
+  {
+    "source": {
+      "aet": "OUR_AET",
+      "ip": "OUR_IP",
+      "port": "OUR_PORT"
+    }
+  }
   ```
-    config.source = {
-      aet: "OUR_AET",
-      ip: "OUR_IP",
-      port: "OUR_PORT"
-    };
-    ```
-
-* add peers to your PACS
-
+- Add peers:
+  ```json
+  {
+    "peers": [
+      {
+        "aet": "PEER_AET",
+        "ip": "PEER_IP",
+        "port": "PEER_PORT"
+      }
+    ]
+  }
   ```
-    config.peers = [
-    {
-      aet: "PEER_AET",
-      ip: "PEER_IP",
-      port: "PEER_PORT"
-    }];
-    ```
-
-* update webserver port:  
-  ```config.webserverPort = 5001;```
+- Update the HTTP listener:
+  ```json
+  {
+    "httpPort": 5001,
+    "httpIp": "0.0.0.0"
+  }
+  ```
 
 ## License
+
 MIT
