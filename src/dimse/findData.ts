@@ -1,25 +1,14 @@
-import fs from 'fs/promises';
-import path from 'path';
-import dicomParser, { DataSet } from 'dicom-parser';
 import { get_element } from '@iwharris/dicom-data-dictionary';
-import { DicomJsonElement, DicomJsonRecord, QueryParams } from '../types';
+import { findScu, findScuOptions, Node as DicomNode } from 'dicom-dimse-native';
+import { DicomJsonElement, DicomJsonRecord, DicomResponse, QueryParams } from '../types';
 import { ConfParams, config } from '../utils/config';
-import { collectFiles, fileExists } from '../utils/fileHelper';
 import { LoggerSingleton } from '../utils/logger';
-import { QUERY_LEVEL } from './querLevel';
+import { queryLevelToString, QUERY_LEVEL } from './querLevel';
 import { tagsForLevel } from './tags';
 
 const controlQueryKeys = new Set(['includefield', 'offset', 'limit']);
-
-type DicomJsonValue = NonNullable<DicomJsonElement['Value']>[number];
-
-interface ParsedDicomFile {
-  filePath: string;
-  studyInstanceUid?: string;
-  seriesInstanceUid?: string;
-  sopInstanceUid?: string;
-  values: Record<string, DicomJsonValue[]>;
-}
+const stringVrTypes = new Set(['PN', 'LO', 'LT', 'SH', 'ST']);
+const utf8NormalizationTag = '00080005';
 
 interface QueryFilter {
   tag: string;
@@ -40,164 +29,49 @@ function findVR(name: string): string {
   return dataElement ? dataElement.vr : '';
 }
 
-function getTagVr(tag: string): string {
-  return findVR(tag) || 'UN';
-}
+function trimElement(element: DicomJsonElement): DicomJsonElement | undefined {
+  if (!Array.isArray(element.Value)) {
+    return element;
+  }
 
-function datasetTag(tag: string): string {
-  return `x${tag.toLowerCase()}`;
-}
-
-function toDicomJsonElement(tag: string, values: DicomJsonValue[]): DicomJsonElement | undefined {
+  const values = element.Value.filter((value) => value !== undefined && value !== '');
   if (values.length === 0) {
     return undefined;
   }
 
-  return {
-    Value: values,
-    vr: getTagVr(tag),
-  };
+  return values.length === element.Value.length ? element : { ...element, Value: values };
 }
 
-function comparableValue(value: DicomJsonValue): string | undefined {
-  if (typeof value === 'string') {
-    return value;
-  }
-  if (typeof value === 'number' || typeof value === 'boolean') {
-    return value.toString();
-  }
-  if (
-    value &&
-    typeof value === 'object' &&
-    'Alphabetic' in value &&
-    typeof value.Alphabetic === 'string'
-  ) {
-    return value.Alphabetic;
-  }
-  return undefined;
+function hasValue(element: DicomJsonElement | undefined): boolean {
+  return Boolean(Array.isArray(element?.Value) && element.Value.length > 0);
 }
 
-function firstComparableValue(values: DicomJsonValue[] | undefined): string | undefined {
-  if (!values) {
-    return undefined;
-  }
-  return values.map(comparableValue).find((value): value is string => value !== undefined);
-}
-
-function valueCountForVr(dataset: DataSet, key: string, vr: string): number {
-  const element = dataset.elements[key];
-  if (!element) {
-    return 0;
-  }
-
-  switch (vr) {
-    case 'US':
-    case 'SS':
-      return Math.max(1, Math.floor(element.length / 2));
-    case 'UL':
-    case 'SL':
-    case 'FL':
-    case 'AT':
-      return Math.max(1, Math.floor(element.length / 4));
-    case 'FD':
-      return Math.max(1, Math.floor(element.length / 8));
-    default:
-      return dataset.numStringValues(key) ?? 1;
-  }
-}
-
-function extractValueByVr(dataset: DataSet, key: string, vr: string, index: number): DicomJsonValue | undefined {
-  switch (vr) {
-    case 'PN': {
-      const value = dataset.string(key, index);
-      return value ? { Alphabetic: value } : undefined;
+function trimRecord(record: DicomJsonRecord, requestedTags: string[]): DicomJsonRecord {
+  const trimmedRecord: DicomJsonRecord = {};
+  for (const tag of requestedTags) {
+    const element = record[tag];
+    if (!element) {
+      continue;
     }
-    case 'US':
-      return dataset.uint16(key, index);
-    case 'SS':
-      return dataset.int16(key, index);
-    case 'UL':
-      return dataset.uint32(key, index);
-    case 'SL':
-      return dataset.int32(key, index);
-    case 'FL':
-      return dataset.float(key, index);
-    case 'FD':
-      return dataset.double(key, index);
-    case 'DS':
-      return dataset.floatString(key, index);
-    case 'IS':
-      return dataset.intString(key, index);
-    case 'AT':
-      return dataset.attributeTag(key);
-    case 'LT':
-    case 'ST':
-    case 'UT':
-      return dataset.text(key, index);
-    default:
-      return dataset.string(key, index) ?? dataset.text(key, index);
-  }
-}
 
-function extractTagValues(dataset: DataSet, tag: string): DicomJsonValue[] {
-  const key = datasetTag(tag);
-  if (!dataset.elements[key]) {
-    return [];
-  }
-
-  const vr = getTagVr(tag);
-  const count = valueCountForVr(dataset, key, vr);
-  const values: DicomJsonValue[] = [];
-  for (let index = 0; index < count; index += 1) {
-    const value = extractValueByVr(dataset, key, vr, index);
-
-    if (value !== undefined && value !== '') {
-      values.push(value);
+    const trimmedElement = trimElement(element);
+    if (trimmedElement) {
+      trimmedRecord[tag] = trimmedElement;
     }
   }
 
-  return values;
+  return trimmedRecord;
 }
 
-function escapeRegExp(value: string): string {
-  return value.replace(/[|\\{}()[\]^$+?.]/g, '\\$&');
-}
-
-function matchesFilter(values: DicomJsonValue[], filter: QueryFilter): boolean {
-  const comparableValues = values
-    .map(comparableValue)
-    .filter((value): value is string => value !== undefined && value !== '');
-  if (comparableValues.length === 0) {
-    return false;
-  }
-
-  if (['PN', 'LO', 'LT', 'SH', 'ST'].includes(filter.vr)) {
-    const regex = new RegExp(`^${escapeRegExp(filter.value).replace(/\\\*/g, '.*')}$`, 'i');
-    return comparableValues.some((value) => regex.test(value));
-  }
-
-  return comparableValues.some((value) => value === filter.value);
-}
-
-function buildRecord(values: Record<string, DicomJsonValue[]>, tags: string[]): DicomJsonRecord {
-  const record: DicomJsonRecord = {};
-  for (const tag of tags) {
-    const element = toDicomJsonElement(tag, values[tag] ?? []);
-    if (element) {
-      record[tag] = element;
-    }
-  }
-  return record;
-}
-
-function withComputedCount(record: DicomJsonRecord, tag: string, count: number): DicomJsonRecord {
-  return {
-    ...record,
-    [tag]: {
-      Value: [count],
-      vr: getTagVr(tag),
-    },
-  };
+function getRequestedTags(query: QueryParams, defaultTags: string[]): string[] {
+  const includes = query.includefield ? query.includefield.split(',') : [];
+  return Array.from(
+    new Set(
+      [...includes, ...defaultTags]
+        .map((tag) => findDicomName(tag) ?? tag)
+        .filter((tag): tag is string => Boolean(tag)),
+    ),
+  );
 }
 
 function normalizeFilters(query: QueryParams): { filters: QueryFilter[]; invalidInput: boolean } {
@@ -217,7 +91,7 @@ function normalizeFilters(query: QueryParams): { filters: QueryFilter[]; invalid
 
     const vr = findVR(propName);
     let value = rawValue;
-    if (['PN', 'LO', 'LT', 'SH', 'ST'].includes(vr)) {
+    if (stringVrTypes.has(vr)) {
       value = value.replace(/^[*]/, '').replace(/[*]$/, '');
       if (minCharsQido > value.length) {
         invalidInput = true;
@@ -233,60 +107,172 @@ function normalizeFilters(query: QueryParams): { filters: QueryFilter[]; invalid
   return { filters, invalidInput };
 }
 
-async function parseDicomFile(filePath: string, requestedTags: string[]): Promise<ParsedDicomFile | undefined> {
-  const data = await fs.readFile(filePath);
-  const dataset = dicomParser.parseDicom(data);
-  const tags = new Set([...requestedTags, '0020000D', '0020000E', '00080018']);
-  const values: Record<string, DicomJsonValue[]> = {};
+function selfNode(): DicomNode {
+  return config.get<DicomNode>(ConfParams.SOURCE);
+}
 
-  for (const tag of tags) {
-    const tagValues = extractTagValues(dataset, tag);
-    if (tagValues.length > 0) {
-      values[tag] = tagValues;
-    }
+function buildFindOptions(
+  level: QUERY_LEVEL,
+  requestedTags: string[],
+  filters: QueryFilter[],
+): findScuOptions {
+  const node = selfNode();
+  const source = { ...node };
+  const target = { ...node };
+  const tags = new Map<string, string>();
+  tags.set('00080052', queryLevelToString(level));
+  for (const tag of requestedTags) {
+    tags.set(tag, '');
+  }
+  tags.set(utf8NormalizationTag, '');
+
+  for (const filter of filters) {
+    tags.set(filter.tag, filter.value);
   }
 
   return {
-    filePath,
-    studyInstanceUid: firstComparableValue(values['0020000D']),
-    seriesInstanceUid: firstComparableValue(values['0020000E']),
-    sopInstanceUid: firstComparableValue(values['00080018']),
-    values,
+    source,
+    target,
+    verbose: config.get<boolean>(ConfParams.VERBOSE),
+    tags: Array.from(tags, ([key, value]) => ({ key, value })),
   };
 }
 
-function isStoredInstanceFile(storagePath: string, filePath: string): boolean {
-  const relativePath = path.relative(storagePath, filePath);
-  if (!relativePath || relativePath.startsWith('..') || path.isAbsolute(relativePath)) {
-    return false;
-  }
-
-  // Stored instances live at <storage>/<StudyInstanceUID>/<SOPInstanceUID>.
-  return relativePath.split(path.sep).filter(Boolean).length === 2;
-}
-
-async function loadStoredFiles(requestedTags: string[]): Promise<ParsedDicomFile[]> {
-  const logger = LoggerSingleton.Instance;
-  const storagePath = config.get<string>(ConfParams.STORAGE_PATH);
-  if (!(await fileExists(storagePath))) {
+function parseContainer(container: string | undefined): DicomJsonRecord[] {
+  if (!container) {
     return [];
   }
 
-  const filePaths = (await collectFiles(storagePath)).filter((filePath) =>
-    isStoredInstanceFile(storagePath, filePath),
-  );
-  const parsedFiles = await Promise.all(
-    filePaths.map(async (filePath) => {
-      try {
-        return await parseDicomFile(filePath, requestedTags);
-      } catch (error) {
-        logger.warn('skipping unreadable DICOM file', filePath, error);
-        return undefined;
-      }
-    }),
-  );
+  const parsed = JSON.parse(container);
+  return Array.isArray(parsed) ? (parsed as DicomJsonRecord[]) : [];
+}
 
-  return parsedFiles.filter((file): file is ParsedDicomFile => Boolean(file?.studyInstanceUid));
+async function runFind(
+  level: QUERY_LEVEL,
+  requestedTags: string[],
+  filters: QueryFilter[],
+): Promise<DicomJsonRecord[]> {
+  const logger = LoggerSingleton.Instance;
+  const options = buildFindOptions(level, requestedTags, filters);
+
+  return new Promise((resolve) => {
+    findScu(options, (result: string) => {
+      if (!result) {
+        logger.error('invalid result received');
+        resolve([]);
+        return;
+      }
+
+      try {
+        const response = JSON.parse(result) as DicomResponse;
+        if (response.code === 0) {
+          const records = parseContainer(response.container);
+          resolve(records.map((record) => trimRecord(record, requestedTags)));
+          return;
+        }
+
+        if (response.code === 1) {
+          logger.info('query is pending...');
+          return;
+        }
+
+        logger.error(`c-find failure: ${response.message}`);
+      } catch (error) {
+        logger.error(error);
+        logger.error(result);
+      }
+
+      resolve([]);
+    });
+  });
+}
+
+function firstStringValue(record: DicomJsonRecord, tag: string): string | undefined {
+  const value = record[tag]?.Value?.[0];
+  return typeof value === 'string' ? value : undefined;
+}
+
+function withCount(record: DicomJsonRecord, tag: string, count: number): DicomJsonRecord {
+  return {
+    ...record,
+    [tag]: {
+      Value: [count],
+      vr: findVR(tag) || 'IS',
+    },
+  };
+}
+
+function countByStudy(records: DicomJsonRecord[]): Map<string, number> {
+  const counts = new Map<string, number>();
+  for (const record of records) {
+    const studyInstanceUid = firstStringValue(record, '0020000D');
+    if (!studyInstanceUid) {
+      continue;
+    }
+
+    counts.set(studyInstanceUid, (counts.get(studyInstanceUid) ?? 0) + 1);
+  }
+  return counts;
+}
+
+function countSeriesByStudy(records: DicomJsonRecord[]): Map<string, number> {
+  const seriesByStudy = new Map<string, Set<string>>();
+  for (const record of records) {
+    const studyInstanceUid = firstStringValue(record, '0020000D');
+    const seriesInstanceUid = firstStringValue(record, '0020000E');
+    if (!studyInstanceUid || !seriesInstanceUid) {
+      continue;
+    }
+
+    const series = seriesByStudy.get(studyInstanceUid) ?? new Set<string>();
+    series.add(seriesInstanceUid);
+    seriesByStudy.set(studyInstanceUid, series);
+  }
+
+  return new Map(
+    Array.from(seriesByStudy.entries()).map(([studyInstanceUid, series]) => [studyInstanceUid, series.size]),
+  );
+}
+
+async function fillStudyCounts(
+  records: DicomJsonRecord[],
+  filters: QueryFilter[],
+  requestedTags: string[],
+): Promise<DicomJsonRecord[]> {
+  const needsSeriesCount =
+    requestedTags.includes('00201206') && records.some((record) => !hasValue(record['00201206']));
+  const needsInstanceCount =
+    requestedTags.includes('00201208') && records.some((record) => !hasValue(record['00201208']));
+
+  if (!needsSeriesCount && !needsInstanceCount) {
+    return records;
+  }
+
+  const [seriesCounts, instanceCounts] = await Promise.all([
+    needsSeriesCount
+      ? runFind(QUERY_LEVEL.SERIES, ['0020000D', '0020000E'], filters).then(countSeriesByStudy)
+      : Promise.resolve(new Map<string, number>()),
+    needsInstanceCount
+      ? runFind(QUERY_LEVEL.IMAGE, ['0020000D', '00080018'], filters).then(countByStudy)
+      : Promise.resolve(new Map<string, number>()),
+  ]);
+
+  return records.map((record) => {
+    const studyInstanceUid = firstStringValue(record, '0020000D');
+    if (!studyInstanceUid) {
+      return record;
+    }
+
+    let nextRecord = record;
+    if (needsSeriesCount && !hasValue(record['00201206'])) {
+      nextRecord = withCount(nextRecord, '00201206', seriesCounts.get(studyInstanceUid) ?? 0);
+    }
+    if (needsInstanceCount && !hasValue(record['00201208'])) {
+      nextRecord = withCount(nextRecord, '00201208', instanceCounts.get(studyInstanceUid) ?? 0);
+    }
+
+    return nextRecord;
+  });
 }
 
 export async function doFind(
@@ -294,81 +280,28 @@ export async function doFind(
   query: QueryParams,
   defaultTags: string[] = tagsForLevel(level),
 ): Promise<DicomJsonRecord[]> {
-  const includes = query.includefield;
-  const tags = includes ? includes.split(',') : [];
-  tags.push(...defaultTags);
-
-  const requestedTags = Array.from(
-    new Set(
-      tags
-        .map((tag) => findDicomName(tag) ?? tag)
-        .filter((tag) => Boolean(tag)),
-    ),
-  );
+  const requestedTags = getRequestedTags(query, defaultTags);
   const { filters, invalidInput } = normalizeFilters(query);
   if (invalidInput) {
     return [];
   }
 
-  const files = await loadStoredFiles(requestedTags.concat(filters.map((filter) => filter.tag)));
-  const matchingFiles = files.filter((file) =>
-    filters.every((filter) => matchesFilter(file.values[filter.tag] ?? [], filter)),
+  const records = await runFind(
+    level,
+    Array.from(new Set([...requestedTags, ...filters.map((filter) => filter.tag)])),
+    filters,
   );
-
-  let records: DicomJsonRecord[] = [];
-  if (level === QUERY_LEVEL.IMAGE) {
-    records = matchingFiles
-      .sort((left, right) => (left.sopInstanceUid ?? '').localeCompare(right.sopInstanceUid ?? ''))
-      .map((file) => buildRecord(file.values, requestedTags));
-  } else if (level === QUERY_LEVEL.SERIES) {
-    const grouped = new Map<string, ParsedDicomFile[]>();
-    for (const file of matchingFiles) {
-      const seriesKey = `${file.studyInstanceUid ?? ''}:${file.seriesInstanceUid ?? ''}`;
-      const group = grouped.get(seriesKey) ?? [];
-      group.push(file);
-      grouped.set(seriesKey, group);
-    }
-
-    records = Array.from(grouped.values())
-      .sort(
-        (left, right) =>
-          `${left[0]?.studyInstanceUid ?? ''}:${left[0]?.seriesInstanceUid ?? ''}`.localeCompare(
-            `${right[0]?.studyInstanceUid ?? ''}:${right[0]?.seriesInstanceUid ?? ''}`,
-          ),
-      )
-      .map((group) => {
-        let record = buildRecord(group[0].values, requestedTags);
-        if (requestedTags.includes('00201209')) {
-          record = withComputedCount(record, '00201209', group.length);
-        }
-        return record;
-      });
-  } else {
-    const grouped = new Map<string, ParsedDicomFile[]>();
-    for (const file of matchingFiles) {
-      const group = grouped.get(file.studyInstanceUid ?? '') ?? [];
-      group.push(file);
-      grouped.set(file.studyInstanceUid ?? '', group);
-    }
-
-    records = Array.from(grouped.values())
-      .sort((left, right) => (left[0]?.studyInstanceUid ?? '').localeCompare(right[0]?.studyInstanceUid ?? ''))
-      .map((group) => {
-        let record = buildRecord(group[0].values, requestedTags);
-        if (requestedTags.includes('00201206')) {
-          const seriesCount = new Set(group.map((file) => file.seriesInstanceUid).filter(Boolean)).size;
-          record = withComputedCount(record, '00201206', seriesCount);
-        }
-        if (requestedTags.includes('00201208')) {
-          record = withComputedCount(record, '00201208', group.length);
-        }
-        return record;
-      });
-  }
 
   const parsedOffset = Number.parseInt(query.offset ?? '0', 10);
   const offset = Number.isNaN(parsedOffset) ? 0 : parsedOffset;
   const parsedLimit = Number.parseInt(query.limit ?? '', 10);
   const limit = Number.isNaN(parsedLimit) ? undefined : parsedLimit;
-  return limit !== undefined ? records.slice(offset, offset + limit) : records.slice(offset);
+  const slicedRecords =
+    limit !== undefined ? records.slice(offset, offset + limit) : records.slice(offset);
+
+  if (level === QUERY_LEVEL.STUDY) {
+    return fillStudyCounts(slicedRecords, filters, requestedTags);
+  }
+
+  return slicedRecords;
 }
