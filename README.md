@@ -48,11 +48,11 @@ No need for a server, try the [standalone desktop edition](https://github.com/kn
   ```text
   AET: DICOMWEB_PACS   port: 8888
   ```
-- Or put DICOM files into `./import` and run:
+- Or, while the PACS is running, put DICOM files into `./import` and run:
   ```bash
   npm run import
   ```
-  This imports the files directly into the PACS storage path.
+  This sends the files through the local store-SCP so they are indexed for DIMSE C-FIND as well.
 - Open the viewer at `http://localhost:5001`.
 
 ## What to modify

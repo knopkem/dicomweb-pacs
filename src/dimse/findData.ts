@@ -1,4 +1,5 @@
 import fs from 'fs/promises';
+import path from 'path';
 import dicomParser, { DataSet } from 'dicom-parser';
 import { get_element } from '@iwharris/dicom-data-dictionary';
 import { DicomJsonElement, DicomJsonRecord, QueryParams } from '../types';
@@ -178,6 +179,16 @@ async function parseDicomFile(filePath: string, requestedTags: string[]): Promis
   };
 }
 
+function isStoredInstanceFile(storagePath: string, filePath: string): boolean {
+  const relativePath = path.relative(storagePath, filePath);
+  if (!relativePath || relativePath.startsWith('..') || path.isAbsolute(relativePath)) {
+    return false;
+  }
+
+  // Stored instances live at <storage>/<StudyInstanceUID>/<SOPInstanceUID>.
+  return relativePath.split(path.sep).filter(Boolean).length === 2;
+}
+
 async function loadStoredFiles(requestedTags: string[]): Promise<ParsedDicomFile[]> {
   const logger = LoggerSingleton.Instance;
   const storagePath = config.get<string>(ConfParams.STORAGE_PATH);
@@ -185,7 +196,9 @@ async function loadStoredFiles(requestedTags: string[]): Promise<ParsedDicomFile
     return [];
   }
 
-  const filePaths = await collectFiles(storagePath);
+  const filePaths = (await collectFiles(storagePath)).filter((filePath) =>
+    isStoredInstanceFile(storagePath, filePath),
+  );
   const parsedFiles = await Promise.all(
     filePaths.map(async (filePath) => {
       try {

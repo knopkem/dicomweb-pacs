@@ -1,57 +1,74 @@
 /* eslint-disable no-console */
-import fs from 'fs/promises';
 import path from 'path';
-import dicomParser from 'dicom-parser';
+import { Node as DicomNode, storeScu, storeScuOptions } from 'dicom-dimse-native';
+import { DicomResponse } from './types';
 import { ConfParams, config } from './utils/config';
-import { collectFiles, ensureDirectories, fileExists } from './utils/fileHelper';
+import { ensureDirectories, fileExists } from './utils/fileHelper';
 import { LoggerSingleton } from './utils/logger';
 
-function getRequiredTag(dataset: dicomParser.DataSet, tag: string): string {
-  const value = dataset.string(`x${tag.toLowerCase()}`);
-  if (!value) {
-    throw new Error(`Missing required DICOM tag ${tag}`);
-  }
-  return value;
+function buildImportOptions(importRoot: string): storeScuOptions {
+  const source = config.get<DicomNode>(ConfParams.SOURCE);
+  return {
+    source,
+    target: source,
+    sourcePath: importRoot,
+    verbose: config.get<boolean>(ConfParams.VERBOSE),
+  };
 }
 
-async function importFile(sourcePath: string): Promise<string> {
-  const data = await fs.readFile(sourcePath);
-  const dataset = dicomParser.parseDicom(data);
-  const studyInstanceUid = getRequiredTag(dataset, '0020000D');
-  const sopInstanceUid = getRequiredTag(dataset, '00080018');
-  const storagePath = config.get<string>(ConfParams.STORAGE_PATH);
-  const targetDir = path.join(storagePath, studyInstanceUid);
-  const targetPath = path.join(targetDir, sopInstanceUid);
+async function importFiles(importRoot: string): Promise<void> {
+  const logger = LoggerSingleton.Instance;
+  const options = buildImportOptions(importRoot);
 
-  await fs.mkdir(targetDir, { recursive: true });
-  await fs.copyFile(sourcePath, targetPath);
-  return targetPath;
+  logger.info(
+    `importing DICOM files from ${importRoot} via C-STORE to ${options.target.aet}@${options.target.ip}:${options.target.port}`,
+  );
+
+  await new Promise<void>((resolve, reject) => {
+    let settled = false;
+    storeScu(options, (result: string) => {
+      if (settled) {
+        return;
+      }
+      if (!result) {
+        settled = true;
+        reject(new Error('invalid result received'));
+        return;
+      }
+
+      try {
+        const response = JSON.parse(result) as DicomResponse;
+        if (response.code === 1) {
+          logger.info(response.message);
+          return;
+        }
+        if (response.code === 2) {
+          settled = true;
+          reject(new Error(response.message));
+          return;
+        }
+
+        logger.info(response.message);
+        settled = true;
+        resolve();
+      } catch (error) {
+        logger.error(result);
+        settled = true;
+        reject(error instanceof Error ? error : new Error(String(error)));
+      }
+    });
+  });
 }
 
 async function main() {
-  const logger = LoggerSingleton.Instance;
   await ensureDirectories();
-  const importRoot = path.join(__dirname, '../import');
+  const importRoot = path.resolve(__dirname, '../import');
   if (!(await fileExists(importRoot))) {
     throw new Error(`Import path does not exist: ${importRoot}`);
   }
 
-  const files = await collectFiles(importRoot);
-  let imported = 0;
-  let skipped = 0;
-
-  for (const filePath of files) {
-    try {
-      const targetPath = await importFile(filePath);
-      logger.info('imported DICOM file', filePath, targetPath);
-      imported += 1;
-    } catch (error) {
-      console.error(`failed to import ${filePath}`, error);
-      skipped += 1;
-    }
-  }
-
-  console.log({ imported, skipped, status: 'success' });
+  await importFiles(importRoot);
+  console.log({ importedFrom: importRoot, status: 'success' });
 }
 
 main().catch((error) => {

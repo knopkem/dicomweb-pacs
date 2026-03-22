@@ -50,7 +50,7 @@
     "@iwharris/dicom-data-dictionary": "^1.26.0",
     "close-with-grace": "^2.5.0",
     "config": "^4.4.1",
-    "dicom-dimse-native": "2.6.0",
+    "dicom-dimse-native": "^2.4.6",
     "dicom-parser": "^1.8.21",
     "fastify": "^5.8.2",
     "pino": "^10.3.1",
