@@ -11,12 +11,14 @@ import { tagsForLevel } from './tags';
 
 const controlQueryKeys = new Set(['includefield', 'offset', 'limit']);
 
+type DicomJsonValue = NonNullable<DicomJsonElement['Value']>[number];
+
 interface ParsedDicomFile {
   filePath: string;
   studyInstanceUid?: string;
   seriesInstanceUid?: string;
   sopInstanceUid?: string;
-  values: Record<string, string[]>;
+  values: Record<string, DicomJsonValue[]>;
 }
 
 interface QueryFilter {
@@ -46,7 +48,7 @@ function datasetTag(tag: string): string {
   return `x${tag.toLowerCase()}`;
 }
 
-function toDicomJsonElement(tag: string, values: string[]): DicomJsonElement | undefined {
+function toDicomJsonElement(tag: string, values: DicomJsonValue[]): DicomJsonElement | undefined {
   if (values.length === 0) {
     return undefined;
   }
@@ -57,26 +59,97 @@ function toDicomJsonElement(tag: string, values: string[]): DicomJsonElement | u
   };
 }
 
-function extractTagValues(dataset: DataSet, tag: string): string[] {
+function comparableValue(value: DicomJsonValue): string | undefined {
+  if (typeof value === 'string') {
+    return value;
+  }
+  if (typeof value === 'number' || typeof value === 'boolean') {
+    return value.toString();
+  }
+  if (
+    value &&
+    typeof value === 'object' &&
+    'Alphabetic' in value &&
+    typeof value.Alphabetic === 'string'
+  ) {
+    return value.Alphabetic;
+  }
+  return undefined;
+}
+
+function firstComparableValue(values: DicomJsonValue[] | undefined): string | undefined {
+  if (!values) {
+    return undefined;
+  }
+  return values.map(comparableValue).find((value): value is string => value !== undefined);
+}
+
+function valueCountForVr(dataset: DataSet, key: string, vr: string): number {
+  const element = dataset.elements[key];
+  if (!element) {
+    return 0;
+  }
+
+  switch (vr) {
+    case 'US':
+    case 'SS':
+      return Math.max(1, Math.floor(element.length / 2));
+    case 'UL':
+    case 'SL':
+    case 'FL':
+    case 'AT':
+      return Math.max(1, Math.floor(element.length / 4));
+    case 'FD':
+      return Math.max(1, Math.floor(element.length / 8));
+    default:
+      return dataset.numStringValues(key) ?? 1;
+  }
+}
+
+function extractValueByVr(dataset: DataSet, key: string, vr: string, index: number): DicomJsonValue | undefined {
+  switch (vr) {
+    case 'PN': {
+      const value = dataset.string(key, index);
+      return value ? { Alphabetic: value } : undefined;
+    }
+    case 'US':
+      return dataset.uint16(key, index);
+    case 'SS':
+      return dataset.int16(key, index);
+    case 'UL':
+      return dataset.uint32(key, index);
+    case 'SL':
+      return dataset.int32(key, index);
+    case 'FL':
+      return dataset.float(key, index);
+    case 'FD':
+      return dataset.double(key, index);
+    case 'DS':
+      return dataset.floatString(key, index);
+    case 'IS':
+      return dataset.intString(key, index);
+    case 'AT':
+      return dataset.attributeTag(key);
+    case 'LT':
+    case 'ST':
+    case 'UT':
+      return dataset.text(key, index);
+    default:
+      return dataset.string(key, index) ?? dataset.text(key, index);
+  }
+}
+
+function extractTagValues(dataset: DataSet, tag: string): DicomJsonValue[] {
   const key = datasetTag(tag);
   if (!dataset.elements[key]) {
     return [];
   }
 
-  const count = dataset.numStringValues(key) ?? 1;
-  const values: string[] = [];
+  const vr = getTagVr(tag);
+  const count = valueCountForVr(dataset, key, vr);
+  const values: DicomJsonValue[] = [];
   for (let index = 0; index < count; index += 1) {
-    const value =
-      dataset.string(key, index) ??
-      dataset.text(key, index) ??
-      dataset.floatString(key, index)?.toString() ??
-      dataset.intString(key, index)?.toString() ??
-      dataset.uint16(key, index)?.toString() ??
-      dataset.int16(key, index)?.toString() ??
-      dataset.uint32(key, index)?.toString() ??
-      dataset.int32(key, index)?.toString() ??
-      dataset.float(key, index)?.toString() ??
-      dataset.double(key, index)?.toString();
+    const value = extractValueByVr(dataset, key, vr, index);
 
     if (value !== undefined && value !== '') {
       values.push(value);
@@ -90,20 +163,23 @@ function escapeRegExp(value: string): string {
   return value.replace(/[|\\{}()[\]^$+?.]/g, '\\$&');
 }
 
-function matchesFilter(values: string[], filter: QueryFilter): boolean {
-  if (values.length === 0) {
+function matchesFilter(values: DicomJsonValue[], filter: QueryFilter): boolean {
+  const comparableValues = values
+    .map(comparableValue)
+    .filter((value): value is string => value !== undefined && value !== '');
+  if (comparableValues.length === 0) {
     return false;
   }
 
   if (['PN', 'LO', 'LT', 'SH', 'ST'].includes(filter.vr)) {
     const regex = new RegExp(`^${escapeRegExp(filter.value).replace(/\\\*/g, '.*')}$`, 'i');
-    return values.some((value) => regex.test(value));
+    return comparableValues.some((value) => regex.test(value));
   }
 
-  return values.some((value) => value === filter.value);
+  return comparableValues.some((value) => value === filter.value);
 }
 
-function buildRecord(values: Record<string, string[]>, tags: string[]): DicomJsonRecord {
+function buildRecord(values: Record<string, DicomJsonValue[]>, tags: string[]): DicomJsonRecord {
   const record: DicomJsonRecord = {};
   for (const tag of tags) {
     const element = toDicomJsonElement(tag, values[tag] ?? []);
@@ -118,7 +194,7 @@ function withComputedCount(record: DicomJsonRecord, tag: string, count: number):
   return {
     ...record,
     [tag]: {
-      Value: [count.toString()],
+      Value: [count],
       vr: getTagVr(tag),
     },
   };
@@ -161,7 +237,7 @@ async function parseDicomFile(filePath: string, requestedTags: string[]): Promis
   const data = await fs.readFile(filePath);
   const dataset = dicomParser.parseDicom(data);
   const tags = new Set([...requestedTags, '0020000D', '0020000E', '00080018']);
-  const values: Record<string, string[]> = {};
+  const values: Record<string, DicomJsonValue[]> = {};
 
   for (const tag of tags) {
     const tagValues = extractTagValues(dataset, tag);
@@ -172,9 +248,9 @@ async function parseDicomFile(filePath: string, requestedTags: string[]): Promis
 
   return {
     filePath,
-    studyInstanceUid: values['0020000D']?.[0],
-    seriesInstanceUid: values['0020000E']?.[0],
-    sopInstanceUid: values['00080018']?.[0],
+    studyInstanceUid: firstComparableValue(values['0020000D']),
+    seriesInstanceUid: firstComparableValue(values['0020000E']),
+    sopInstanceUid: firstComparableValue(values['00080018']),
     values,
   };
 }

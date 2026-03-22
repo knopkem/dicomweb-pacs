@@ -19,12 +19,16 @@ function buildContentLocation(
   studyInstanceUid: string,
   seriesInstanceUid: string | undefined,
   sopInstanceUid: string,
+  frame: string | undefined,
 ): string {
   let contentLocation = `/studies/${studyInstanceUid}`;
   if (seriesInstanceUid) {
     contentLocation += `/series/${seriesInstanceUid}`;
   }
-  contentLocation += `/instance/${sopInstanceUid}`;
+  contentLocation += `/instances/${sopInstanceUid}`;
+  if (frame) {
+    contentLocation += `/frames/${frame}`;
+  }
   return contentLocation;
 }
 
@@ -32,6 +36,7 @@ export async function doWadoRsFrame({
   studyInstanceUid,
   seriesInstanceUid,
   sopInstanceUid,
+  frame,
 }: WadoRsArgs): Promise<BinaryResponse> {
   const logger = LoggerSingleton.Instance;
   const storagePath = config.get<string>(ConfParams.STORAGE_PATH);
@@ -64,24 +69,27 @@ export async function doWadoRsFrame({
   );
 
   const boundary = randomBytes(16).toString('hex');
+  const contentId = randomBytes(16).toString('hex');
   const term = '\r\n';
   const contentLocation = buildContentLocation(
     studyInstanceUid,
     seriesInstanceUid,
     sopInstanceUid,
+    frame,
   );
 
   const body = Buffer.concat([
-    Buffer.from(`--${boundary}${term}`),
-    Buffer.from(`Content-Location:${contentLocation};${term}`),
-    Buffer.from(`Content-Type:application/octet-stream;${term}`),
+    Buffer.from(`${term}--${boundary}${term}`),
+    Buffer.from(`Content-Location: ${contentLocation}${term}`),
+    Buffer.from(`Content-ID: ${contentId}${term}`),
+    Buffer.from(`Content-Type: application/octet-stream${term}`),
     Buffer.from(term),
     pixelData,
     Buffer.from(`${term}--${boundary}--${term}`),
   ]);
 
   return {
-    contentType: `multipart/related; type="application/octet-stream"; boundary="${boundary}"`,
+    contentType: `multipart/related; start="${contentId}"; type="application/octet-stream"; boundary="${boundary}"`,
     buffer: body,
   };
 }

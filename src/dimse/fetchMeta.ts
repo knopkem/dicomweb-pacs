@@ -7,7 +7,7 @@ function applyDefault(
   record: DicomJsonRecord,
   tag: string,
   vr: string,
-  defaultValue: string,
+  defaultValue: string | number,
 ): DicomJsonRecord {
   if (record[tag]?.Value) {
     return record;
@@ -25,10 +25,10 @@ function applyDefault(
 function fixResponse(records: DicomJsonRecord[]): DicomJsonRecord[] {
   return records.map((record) => {
     let nextRecord = record;
-    nextRecord = applyDefault(nextRecord, '00281050', 'DS', '100.0');
-    nextRecord = applyDefault(nextRecord, '00281051', 'DS', '100.0');
-    nextRecord = applyDefault(nextRecord, '00281052', 'DS', '1.0');
-    nextRecord = applyDefault(nextRecord, '00281053', 'DS', '1.0');
+    nextRecord = applyDefault(nextRecord, '00281050', 'DS', 100.0);
+    nextRecord = applyDefault(nextRecord, '00281051', 'DS', 100.0);
+    nextRecord = applyDefault(nextRecord, '00281052', 'DS', 1.0);
+    nextRecord = applyDefault(nextRecord, '00281053', 'DS', 1.0);
     return nextRecord;
   });
 }
